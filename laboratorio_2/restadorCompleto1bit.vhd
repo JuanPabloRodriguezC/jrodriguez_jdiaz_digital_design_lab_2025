@@ -1,5 +1,5 @@
 library IEEE;
-use IEEE.STD_LOGIC_1164.all; -- importar librerias
+use IEEE.STD_LOGIC_1164.all; -- importa librerias
 
 entity restadorCompleto1bit is -- entidad que forma parte de la estructura grande
 //realiza la operacion B - A con un bit de acarreo Cin
@@ -13,4 +13,4 @@ entity restadorCompleto1bit is -- entidad que forma parte de la estructura grand
         Y <= ((B xor A) xor Cin); -- salida S es la suma xor de A, B y Cin (ver diseño)
 
         Cout <= ((Cin and not(B)) or (Cin and A) or (not(B) or A)); -- segun la ecuacion determinada (ver diseño)
-    end Behavioral; -- fin de la arquitectura 
+    end Behavioral; -- fin de la arquitectura
