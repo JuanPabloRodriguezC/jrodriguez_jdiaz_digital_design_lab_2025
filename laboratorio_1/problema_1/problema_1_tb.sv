@@ -1,8 +1,9 @@
 module problema_1_tb();
     logic [3:0] binary_in;
     logic [3:0] gray_out;
+	  logic [6:0] seg_out;
     
-    problema_1 #(.WIDTH(4)) dut(.binary_in(binary_in), .gray_out(gray_out));
+    problema_1 #(.WIDTH(4)) dut(.binary_in(binary_in), .gray_out(gray_out), .seg_out(seg_out));
     
     initial begin
        
