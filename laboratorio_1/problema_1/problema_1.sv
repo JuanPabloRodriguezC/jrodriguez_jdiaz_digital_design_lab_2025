@@ -1,7 +1,9 @@
 module problema_1 #(parameter WIDTH=4)(
     input logic [WIDTH-1:0] binary_in,
+
     output logic [WIDTH-1:0] gray_out, 
-	 output logic [6:0] seg_out //7 segmentos
+	  output logic [6:0] seg_out //7 segmentos
+
 );
     always_comb begin
         gray_out[WIDTH-1] = binary_in[WIDTH-1];
@@ -27,5 +29,6 @@ module problema_1 #(parameter WIDTH=4)(
 				4'he: seg_out = 7'b0000110;
 				4'hf: seg_out = 7'b0001110;
 			endcase
+
     end
 endmodule
