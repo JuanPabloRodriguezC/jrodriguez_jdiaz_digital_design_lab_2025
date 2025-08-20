@@ -1,6 +1,6 @@
 module decoder_segmentos (
     input  logic [3:0] data,
-    output logic [6:0] segments   // {a,b,c,d,e,f,g}
+    output logic [6:0] segments
 );
     always_comb begin
         case (data)
@@ -14,12 +14,6 @@ module decoder_segmentos (
 				4'h7: segments = 7'b1111000;
 				4'h8: segments = 7'b0000000;
 				4'h9: segments = 7'b0010000;
-				4'ha: segments = 7'b0001000;
-				4'hb: segments = 7'b0000011;
-				4'hc: segments = 7'b1000110;
-				4'hd: segments = 7'b0100001;
-				4'he: segments = 7'b0000110;
-				4'hf: segments = 7'b0001110;
 			endcase
     end
 endmodule

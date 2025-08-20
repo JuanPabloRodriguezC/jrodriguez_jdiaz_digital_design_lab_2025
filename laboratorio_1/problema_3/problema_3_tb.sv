@@ -1,4 +1,4 @@
-timescale 1ns/1ps
+`timescale 1ns/1ps
 
 module problema_3_tb;
     parameter WIDTH = 4;
@@ -6,14 +6,16 @@ module problema_3_tb;
     logic clk;
     logic reset_n;
     logic button;
-    logic [6:0] segments;
+    logic [6:0] segments_tens;
+	 logic [6:0] segments_units;
 
     
     problema_3 #(.WIDTH(WIDTH)) dut (
         .clk(clk),
         .reset_n(reset_n),
         .button(button),
-        .segments(segments)
+        .segments_tens(segments_tens),
+		  .segments_units(segments_units)
     );
 
     // Generador de reloj (100 MHz → periodo 10 ns)
