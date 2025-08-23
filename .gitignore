@@ -1,0 +1,32 @@
+# Quartus Prime generated files
+*.rpt
+*.summary
+*.done
+*.jdi
+*.pin
+*.sof
+*.pof
+*.rbf
+*.ttf
+*.qarlog
+*.qws
+*.bak
+*~
+*.orig
+
+# ModelSim/QuestaSim files
+work/
+transcript
+*.wlf
+*.vstf
+*.wlft
+
+# Platform Designer generated files
+*_generation_script*
+*.sopcinfo
+*.html
+*.cmp
+
+# Other temporary files
+*.autosave.DS_Store
+**/.DS_Store
