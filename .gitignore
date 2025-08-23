@@ -28,4 +28,5 @@ transcript
 *.cmp
 
 # Other temporary files
-*.autosave
+*.autosave.DS_Store
+**/.DS_Store
