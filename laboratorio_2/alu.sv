@@ -77,7 +77,8 @@ module alu #(parameter WIDTH=4)(
         case(botones)
             4'b0001: begin S = sum_S;  Cout = sum_Cout;  end // Botón en 1 = Suma, begin y end porque inicia un bloque de mas de una instruccion
             4'b0010: begin S = rest_S; Cout = rest_Cout; end // Botón en 2 = Resta
-				//multiplicacion // Botón 3 → Multiplicacion
+				
+				//multiplicacion // Botón 3 = Multiplicacion
 				
             4'b0100: S = div_S;       // Botón en 4 = division
             4'b0101: S = mod_S;        // Botón en 5 = modulo
@@ -85,7 +86,6 @@ module alu #(parameter WIDTH=4)(
 				4'b0111: S = or_S;			// Boton en 7 = OR
 				4'b1000: S = xor_S;			// Boton en 8 = XOR
 				
-            // Podés mapear combinaciones múltiples para XOR, div, módulo, etc.
 				
             default: S = {WIDTH{1'b0}}; //asegura un default
         endcase
