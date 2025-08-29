@@ -2,7 +2,7 @@
 
 module restadorCompletoN_tb;
 
-    parameter WIDTH = 4; // cambiá esto para probar diferentes anchos
+    parameter WIDTH = 4; // cambiar esto para probar diferentes anchos
 
     // Inputs a probar
     logic [WIDTH-1:0] A, B;
