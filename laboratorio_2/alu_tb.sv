@@ -71,7 +71,7 @@ module alu_tb;
 		  // Caso 4.1: Division entera (6 / 2)
         A = 4'b0110; B = 4'b0010; Cin = 0;
         boton3 = 0; boton2 = 1; boton1 = 0; boton0 = 0; #10;
-		  assert (S === 4'b0010) else $error("division entera failed");
+		  assert (S === 4'b0011) else $error("division entera failed");
 		  
 		  // Caso 4.2: Division decimal y menor (3 / 10)
         A = 4'b0011; B = 4'b1010; Cin = 0;
