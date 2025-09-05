@@ -10,16 +10,15 @@ module multiplicadorCompletoN #(parameter WIDTH=4)(
 	logic [WIDTH] cout;
 	assign res_parcial[0] = '0;
 	
-	
-	aways_comb begin
-	
+	genvar i
+	generate
 		for(int i=1; i < WIDTH;i++) begin
-        assign multiplicando_desplazado[i] = {{WIDTH{1'b0}}, multiplicando} << 1;
+        assign mult_desplazado[i] = {{WIDTH{1'b0}}, multiplicando} << 1;
 		  
 		  
 		  sumadorCompletoN #(.WIDTH(2*WIDTH)) sumador (
 			.A(res_parcial[i]),
-			.B(mult_desplazado[i],
+			.B(mult_desplazado[i]),
 			.Cin(1'b0),
 			.S(suma_res[i]),
 			.Cout(cout[i])
@@ -28,9 +27,9 @@ module multiplicadorCompletoN #(parameter WIDTH=4)(
 			if multiplicador[i] == 1 begin
 				assign res_parcial[i+1] = suma_res;
 			else
-				assign res_parcial[i+1] = resultado_parcial[i];
+				assign res_parcial[i+1] = res_parcial[i];
 			end
 		end
-		assign res = res_parcial[WIDTH];
-	end
+	endgenerate
+	assign res = res_parcial[WIDTH];
 endmodule
