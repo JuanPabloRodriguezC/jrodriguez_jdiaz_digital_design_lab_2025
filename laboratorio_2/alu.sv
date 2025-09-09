@@ -1,31 +1,35 @@
-// ALU parametrizable con suma y resta
 module alu #(parameter WIDTH=4)(
     input  logic [WIDTH-1:0] A,
     input  logic [WIDTH-1:0] B,
     input  logic boton0,
-	 input  logic boton1, 
-	 input  logic boton2,
-	 input  logic boton3,
-	 
+    input  logic boton1, 
+    input  logic boton2,
+    input  logic boton3,
     input  logic Cin,
-	 
     
-    output logic [WIDTH-1:0] S,
+    output logic [WIDTH-1:0] S,        // Salida siempre de 4 bits
     output logic Cout,
-	 output logic [2*WIDTH-1:0]res,
-	 output logic Z, N, V
+    output logic Z, N, V,
+    output logic [6:0] segments_units,
+    output logic [6:0] segments_tens
 );
 
-    // Botones en un vector de 4 bits para contolar las operaciones
+    // Botones en un vector de 4 bits para controlar las operaciones
     logic [3:0] botones;
     assign botones = {boton3, boton2, boton1, boton0};
-	 
-	 // Señales internas (para que todo no este manejado al mismo S)
+    
+    // Señales internas (para que todo no esté manejado al mismo S)
     logic [WIDTH-1:0] sum_S, rest_S, div_S, mod_S;
-	 logic [WIDTH-1: 0] multiplicador_S;
+    logic [WIDTH-1:0] multiplicador_S;
     logic sum_Cout, rest_Cout, shiftL_Cout, shiftR_Cout;
     logic [WIDTH-1:0] and_S, or_S, xor_S;
-	 logic [WIDTH-1:0] shiftL_S, shiftR_S;
+    logic [WIDTH-1:0] shiftL_S, shiftR_S;
+    
+    // Señales para detectar overflow
+    logic [2*WIDTH-1:0] res_multiplicacion; // Para capturar resultado completo de multiplicación
+    
+    logic [3:0] units_digit;
+    logic [3:0] tens_digit;
 
     // 1. Sumador parametrizable
     sumadorCompletoN #(.WIDTH(WIDTH)) u_sumador (
@@ -44,80 +48,159 @@ module alu #(parameter WIDTH=4)(
         .S(rest_S),
         .Cout(rest_Cout)
     );
-	 
-	 multiplicadorCompletoN #(.WIDTH(WIDTH)) u_multiplicador (
+    
+    // 3. Multiplicador parametrizable
+    multiplicadorCompletoN #(.WIDTH(WIDTH)) u_multiplicador (
         .multiplicando(A),
         .multiplicador(B),
-        .res(multiplicador_S)
+        .res(res_multiplicacion)  // Resultado completo (8 bits para 4x4)
     );
-	 
-	 // 3. Multiplicacion parametrizable
-	 
-	 // Esta tiene que ser con tabla de verdad. Se hara despues
-	 
-	 // 4. Division parametrizable
-	 
-	 assign div_S = A / B;
-	 
-	 // 5. Modulo parametrizable
-	 
-	 assign mod_S = A % B;
-	 
-	 // 6. Operaciones logicas AND, OR, XOR
-	 
-	 assign and_S = A & B; // AND
-	 
-	 assign or_S = A | B; // OR
-	 
-	 assign xor_S = A ^ B; // XOR
-	 
-
-	 // 7. Shift left y right
-	 
-	 assign shiftL_S = A << 1; // Left
-	 
-	 assign shiftR_S = A >> 1; // Right
-	 
-	 assign shiftL_Cout = A[WIDTH-1]; // Left Cout // Flags carry
-	 
-	 assign shiftR_Cout = A[0]; // Right Cout // Flags carry
-	 
-	 
-	 
-	 // 8. Case para elegir opciones
-   
-	always_comb begin
+    
+    // Tomar solo los 4 bits bajos del resultado de multiplicación
+    assign multiplicador_S = res_multiplicacion[WIDTH-1:0];
+    
+    // 4. División parametrizable
+    always_comb begin
+        if (B != 0) begin
+            div_S = A / B;
+        end else begin
+            div_S = {WIDTH{1'b1}}; // Valor de error para división por cero
+        end
+    end
+    
+    // 5. Módulo parametrizable
+    always_comb begin
+        if (B != 0) begin
+            mod_S = A % B;
+        end else begin
+            mod_S = {WIDTH{1'b0}}; // Valor de error para módulo por cero
+        end
+    end
+    
+    // 6. Operaciones lógicas AND, OR, XOR
+    assign and_S = A & B; // AND
+    assign or_S = A | B;  // OR
+    assign xor_S = A ^ B; // XOR
+    
+    // 7. Shift left y right
+    assign shiftL_S = A << 1;     // Left
+    assign shiftR_S = A >> 1;     // Right
+    assign shiftL_Cout = A[WIDTH-1]; // Left Cout
+    assign shiftR_Cout = A[0];       // Right Cout
+    
+    // 8. Case para elegir opciones
+    always_comb begin
         S = {WIDTH{1'b0}}; 
         Cout = 1'b0;
-		  Z =  1'b0;
-		  res = {2*WIDTH{1'b0}};
-		  
-
+        V = 1'b0;
 
         case(botones)
-            4'b0001: begin S = sum_S;  Cout = sum_Cout;  end // Botón en 1 = Suma, begin y end porque inicia un bloque de mas de una instruccion
-            4'b0010: begin S = rest_S; Cout = rest_Cout; end // Botón en 2 = Resta
-				
-				4'b0011: S = multiplicador_S; //multiplicacion // Botón 3 = Multiplicacion
-				
-            4'b0100: S = div_S;       // Botón en 4 = division
-            4'b0101: S = mod_S;        // Botón en 5 = modulo
-				4'b0110: S = and_S;			// Boton en 6 = AND
-				4'b0111: S = or_S;			// Boton en 7 = OR
-				
-				4'b1000: S = xor_S;			// Boton en 8 = XOR
-				
-				4'b1001: begin S = shiftL_S; Cout = shiftL_Cout; end		// Boton en 9 = shift L
-				4'b1010: begin S = shiftR_S; Cout = shiftR_Cout; end		// Boton en 10 = shift R
-				
-				
-            default: S = {WIDTH{1'b0}}; //asegura un default
+            4'b1110: begin 
+                S = sum_S;  
+                Cout = sum_Cout;
+            end
+            
+            4'b1101: begin 
+                S = rest_S; 
+                N = rest_Cout; 
+                V = 1'b0;
+            end
+            
+            4'b1100: begin
+                S = multiplicador_S;
+                Cout = 1'b0;
+                V = |res_multiplicacion[2*WIDTH-1:WIDTH];
+            end
+            
+            4'b1011: begin
+                S = div_S;
+                Cout = 1'b0;
+                V = 1'b0;
+            end
+            
+            4'b1010: begin
+                S = mod_S;
+                Cout = 1'b0;
+                V = 1'b0;
+            end
+            
+            4'b1001: begin
+                S = and_S;
+                Cout = 1'b0;
+                V = 1'b0;
+            end
+            
+            4'b1000: begin
+                S = or_S;
+                Cout = 1'b0;
+                V = 1'b0;
+            end
+            
+            4'b0111: begin
+                S = xor_S;
+                Cout = 1'b0;
+                V = 1'b0;
+            end
+            
+            4'b0110: begin
+                S = shiftL_S; 
+                Cout = shiftL_Cout;
+                V = 1'b0;
+            end
+            
+            4'b0101: begin
+                S = shiftR_S; 
+                Cout = shiftR_Cout;
+                V = 1'b0;
+            end
+            
+            default: begin
+                S = {WIDTH{1'b0}};
+                Cout = 1'b0;
+                V = 1'b0;
+            end
         endcase
-		  
-		  // Flags
-		  
-		  Z = (S == {WIDTH{1'b0}});
-		  
     end
+    
+    // 9. Conversión para display de 7 segmentos
+    always_comb begin
+        if (S < 10) begin
+            tens_digit = 4'b0000;
+            units_digit = S[3:0];
+        end else if (S < 20) begin
+            tens_digit = 4'b0001;
+            units_digit = S - 10;
+        end else if (S < 30) begin
+            tens_digit = 4'b0010;
+            units_digit = S - 20;
+        end else if (S < 40) begin
+            tens_digit = 4'b0011;
+            units_digit = S - 30;
+        end else if (S < 50) begin
+            tens_digit = 4'b0100;
+            units_digit = S - 40;
+        end else if (S < 60) begin
+            tens_digit = 4'b0101;
+            units_digit = S - 50;
+        end else begin // 60-63 para WIDTH=4
+            tens_digit = 4'b0110;
+            units_digit = S - 60;
+        end
+    end
+    
+    // 10. Instanciación de decodificadores de 7 segmentos
+    decoder_segmentos display_decenas (
+        .data(tens_digit),
+        .segments(segments_tens)
+    );
+    
+    decoder_segmentos display_unidades (
+        .data(units_digit),
+        .segments(segments_units)
+    );
+    
+    // 11. Flags de estado
+	 Z = (S == 4'b0000);  // Zero flag
+  
 
 endmodule

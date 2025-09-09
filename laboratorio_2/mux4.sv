@@ -1,6 +1,6 @@
 // Multiplexor de 4 entradas
 
-module mux4 (parameter WIDTH = 4)(
+module mux4 #(parameter WIDTH = 4)(
 	input logic [WIDTH-1:0] d0, d1, d2, d3,
 	input logic [1:0] s, // es un vector de 2 bits.
 		// El primer bit trabaja los mux low y high, y el segundo el final
