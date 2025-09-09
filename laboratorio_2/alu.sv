@@ -90,65 +90,72 @@ module alu #(parameter WIDTH=4)(
     
     // 8. Case para elegir opciones
     always_comb begin
-        S = {WIDTH{1'b0}}; 
-        Cout = 1'b0;
-        V = 1'b0;
+			S     = {WIDTH{1'b0}};
+			Cout  = 1'b0;
+			V     = 1'b0;
+			N     = 1'b0;
+			Z     = 1'b0;
+
 
         case(botones)
-            4'b1110: begin 
+            4'b1110: begin // suma
                 S = sum_S;  
                 Cout = sum_Cout;
             end
+				
+				4'b1101: begin // resta
+				S = rest_S; 
+				Cout = rest_Cout; 
+				// N solo vale 1 cuando B < A 
+				N = (B < A);
+				V = 1'b0;
+				
+				end
+
             
-            4'b1101: begin 
-                S = rest_S; 
-                N = rest_Cout; 
-                V = 1'b0;
-            end
-            
-            4'b1100: begin
+            4'b1100: begin // mult
                 S = multiplicador_S;
                 Cout = 1'b0;
                 V = |res_multiplicacion[2*WIDTH-1:WIDTH];
             end
             
-            4'b1011: begin
+            4'b1011: begin // division
                 S = div_S;
                 Cout = 1'b0;
                 V = 1'b0;
             end
             
-            4'b1010: begin
+            4'b1010: begin // modulo
                 S = mod_S;
                 Cout = 1'b0;
                 V = 1'b0;
             end
             
-            4'b1001: begin
+            4'b1001: begin // and
                 S = and_S;
                 Cout = 1'b0;
                 V = 1'b0;
             end
             
-            4'b1000: begin
+            4'b1000: begin // or
                 S = or_S;
                 Cout = 1'b0;
                 V = 1'b0;
             end
             
-            4'b0111: begin
+            4'b0111: begin // xor
                 S = xor_S;
                 Cout = 1'b0;
                 V = 1'b0;
             end
             
-            4'b0110: begin
+            4'b0110: begin // shift L
                 S = shiftL_S; 
                 Cout = shiftL_Cout;
                 V = 1'b0;
             end
             
-            4'b0101: begin
+            4'b0101: begin // shift R
                 S = shiftR_S; 
                 Cout = shiftR_Cout;
                 V = 1'b0;
@@ -160,6 +167,11 @@ module alu #(parameter WIDTH=4)(
                 V = 1'b0;
             end
         endcase
+		  
+		      // 11. Flags de estado
+			Z = (S == {WIDTH{1'b0}}); // zero flag
+
+		  
     end
     
     // 9. Conversión para display de 7 segmentos
@@ -198,9 +210,6 @@ module alu #(parameter WIDTH=4)(
         .data(units_digit),
         .segments(segments_units)
     );
-    
-    // 11. Flags de estado
-	 Z = (S == 4'b0000);  // Zero flag
   
 
 endmodule
