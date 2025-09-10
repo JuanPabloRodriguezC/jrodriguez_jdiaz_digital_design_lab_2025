@@ -84,8 +84,8 @@ module alu #(parameter WIDTH=4)(
     assign xor_S = A ^ B; // XOR
     
     // 7. Shift left y right
-    assign shiftL_S = A << 1;     // Left
-    assign shiftR_S = A >> 1;     // Right
+    assign shiftL_S = A << B;     // Left
+    assign shiftR_S = A >> B;     // Right
     assign shiftL_Cout = A[WIDTH-1]; // Left Cout
     assign shiftR_Cout = A[0];       // Right Cout
     

@@ -151,29 +151,29 @@ module alu_tb;
 		  // -------------------------------------------------------------
 		  
 		  // Caso 9.1: Shift L simple
-        A = 4'b0110; B = 4'b0000; Cin = 0;
+        A = 4'b0110; B = 4'b0001; Cin = 0;
         boton3 = 0; boton2 = 1; boton1 = 1; boton0 = 0; #10;
 		  assert (S === 4'b1100) else $error("shiftL simple failed");
 		  assert (Cout === 0) else $error("carry 0 failed");
 		  
 		  // Caso 9.2: Shift L desborda
-        A = 4'b1010; B = 4'b0000; Cin = 0;
+        A = 4'b1010; B = 4'b0010; Cin = 0;
         boton3 = 0; boton2 = 1; boton1 = 1; boton0 = 0; #10;
-		  assert (S === 4'b0100) else $error("shiftL desborda failed");
+		  assert (S === 4'b1000) else $error("shiftL desborda failed");
 		  assert (Cout === 1) else $error("carry 1 failed");
 		  
 		  // -------------------------------------------------------------
 		  
 		  // Caso 10.1: Shift R simple
-        A = 4'b0110; B = 4'b0000; Cin = 0;
+        A = 4'b0110; B = 4'b0001; Cin = 0;
         boton3 = 0; boton2 = 1; boton1 = 0; boton0 = 1; #10;
-		  assert (S === 4'b0011) else $error("shiftL simple failed");
-		  assert (Cout === 0) else $error("carry L 0 failed");
+		  assert (S === 4'b0011) else $error("shiftR simple failed");
+		  assert (Cout === 0) else $error("carry R 0 failed");
 		  
 		  // Caso 10.2: Shift R desborda
-        A = 4'b0101; B = 4'b0000; Cin = 0;
+        A = 4'b0101; B = 4'b0010; Cin = 0;
         boton3 = 0; boton2 = 1; boton1 = 0; boton0 = 1; #10;
-		  assert (S === 4'b0010) else $error("shiftR desborda failed");
+		  assert (S === 4'b0001) else $error("shiftR desborda failed");
 		  assert (Cout === 1) else $error("carry R 1 failed");
 		  
 		  
