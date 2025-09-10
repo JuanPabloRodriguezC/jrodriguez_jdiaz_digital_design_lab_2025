@@ -48,21 +48,21 @@ module alu_tb;
 		  assert (Z === 0) else $error("zero 3 + 6 failed");
 		  
         
-        // Caso 1.2: Suma con carry (15 + 1)
-        A = 4'b1111; B = 4'b0001; Cin = 0;
+        // Caso 1.2: Suma con carry (10 + 12)
+        A = 4'b1010; B = 4'b1100; Cin = 0;
 		  boton3 = 1; boton2 = 1; boton1 = 1; boton0 = 0; #10;
-		  assert (S === 4'b0000) else $error("suma 15 + 1 failed");
-		  assert (Cout === 1) else $error("carry 15 + 1 failed");
-		  assert (Z === 1) else $error("zero 15 + 1 failed");
+		  assert (S === 4'b0110) else $error("suma 10 + 12 failed");
+		  assert (Cout === 1) else $error("carry 10 + 12 failed");
+		
 		  
 		  // ------------------------------------------------------
         
 
-        // Caso 2.1: Resta (5 - 8) pues es B - A
-        A = 4'b1000; B = 4'b0101; Cin = 0;
+        // Caso 2.1: Resta (1 - 3) pues es B - A
+        A = 4'b0011; B = 4'b0001; Cin = 0;
 		  boton3 = 1; boton2 = 1; boton1 = 0; boton0 = 1; #10;
-		  assert (S === 4'b1101) else $error("resta 5 - 8 failed");
-		  assert (Cout === 1) else $error("carry 5 - 8 failed");
+		  assert (S === 4'b1110) else $error("resta 1 - 3 failed");
+		  assert (Cout === 1) else $error("carry 1 - 3 failed");
 		  assert (N === 1) else $error("resta negativa failed");
         
 
@@ -81,11 +81,12 @@ module alu_tb;
 		  assert (S === 4'b1111) else $error("3 x 5 failed");
 		  assert (V === 0) else $error("no debio haber overflow");
 		  
-		  // Caso 3.2 Multiplicacion 5x5
-		  A = 4'b0101; B = 4'b0101; Cin = 0;
+		  // Caso 3.2 Multiplicacion 8x8
+		  A = 4'b1000; B = 4'b1000; Cin = 0;
         boton3 = 1; boton2 = 1; boton1 = 0; boton0 = 0; #10;
-		  assert (S === 4'b1001) else $error("5 x 5 failed");
+		  assert (S === 4'b0000) else $error("8 x 8 failed");
 		  assert (V === 1) else $error("debio haber overflow");
+		  assert (Z === 1) else $error("zero 8x8 failed");
 		  
 		  // ----------------------------------------------------------
 		  
