@@ -1,7 +1,8 @@
 module multiplicadorCompletoN #(parameter WIDTH=4)(
     input  logic [WIDTH-1:0] multiplicando,
     input  logic [WIDTH-1:0] multiplicador, 
-    output logic [WIDTH-1:0] res
+    output logic [WIDTH-1:0] res,
+	 output logic overflow
 );
 
     logic [2*WIDTH-1:0] res_parcial [0:WIDTH];
@@ -28,7 +29,6 @@ module multiplicadorCompletoN #(parameter WIDTH=4)(
             assign res_parcial[i+1] = multiplicador[i] ? suma_res[i] : res_parcial[i];
         end
     endgenerate
-
     assign res = res_parcial[WIDTH];
-
+	 assign overflow = |res_parcial[WIDTH][2*WIDTH-1:WIDTH];// OR de bits altos
 endmodule

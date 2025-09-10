@@ -21,7 +21,7 @@ module alu #(parameter WIDTH=4)(
     // Señales internas (para que todo no esté manejado al mismo S)
     logic [WIDTH-1:0] sum_S, rest_S, div_S, mod_S;
     logic [WIDTH-1:0] multiplicador_S;
-    logic sum_Cout, rest_Cout, shiftL_Cout, shiftR_Cout;
+    logic sum_Cout, rest_Cout, shiftL_Cout, shiftR_Cout, mult_overflow;
     logic [WIDTH-1:0] and_S, or_S, xor_S;
     logic [WIDTH-1:0] shiftL_S, shiftR_S;
     
@@ -53,7 +53,8 @@ module alu #(parameter WIDTH=4)(
     multiplicadorCompletoN #(.WIDTH(WIDTH)) u_multiplicador (
         .multiplicando(A),
         .multiplicador(B),
-        .res(res_multiplicacion)  // Resultado completo (8 bits para 4x4)
+        .res(res_multiplicacion),
+		  .overflow(mult_overflow)
     );
     
     // Tomar solo los 4 bits bajos del resultado de multiplicación
@@ -101,22 +102,22 @@ module alu #(parameter WIDTH=4)(
             4'b1110: begin // suma
                 S = sum_S;  
                 Cout = sum_Cout;
+					 V = 1'b0;
             end
 				
 				4'b1101: begin // resta
-				S = rest_S; 
-				Cout = rest_Cout; 
-				// N solo vale 1 cuando B < A 
-				N = (B < A);
-				V = 1'b0;
-				
+					S = rest_S; 
+					Cout = rest_Cout; 
+					// N solo vale 1 cuando B < A 
+					N = (B < A);
+					V = 1'b0;
 				end
 
             
             4'b1100: begin // mult
                 S = multiplicador_S;
                 Cout = 1'b0;
-                V = |res_multiplicacion[2*WIDTH-1:WIDTH];
+                 V = mult_overflow;
             end
             
             4'b1011: begin // division
@@ -169,7 +170,7 @@ module alu #(parameter WIDTH=4)(
         endcase
 		  
 		      // 11. Flags de estado
-			Z = (S == {WIDTH{1'b0}}); // zero flag
+		Z = (S == {WIDTH{1'b0}}); // zero flag
 
 		  
     end
