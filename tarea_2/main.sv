@@ -1,4 +1,4 @@
-module tarea2 (
+module main (
   input  logic clk,
   input  logic reset,
   input  logic m,              // botón de mantenimiento
