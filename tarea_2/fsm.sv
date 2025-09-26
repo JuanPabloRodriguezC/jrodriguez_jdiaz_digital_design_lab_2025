@@ -24,21 +24,3 @@ assign rst_tiempo = (state == S1);
 assign set_mux = (state == S3)
 
 endmodule
-
-// modulos auxiliares de la FSM
-
-module regCiclos(input rst_tiempo); 
-
-endmodule
-
-// 
-
-module regContador(input cont);
-
-endmodule
-
-// 
-
-module mux(input set_mux);
-
-endmodule

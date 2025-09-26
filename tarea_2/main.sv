@@ -48,9 +48,9 @@ module main (
   // Instancia del mux
   // ============================
   mux mux_inst (
-    .mantenimiento(mantenimiento),
-    .set_mux(set_mux),
-    .data_in(data_in)
+    .d0(mantenimiento),
+    .d1(8h'ff),
+    .set_mux(set_mux)
   );
 
   // ============================
