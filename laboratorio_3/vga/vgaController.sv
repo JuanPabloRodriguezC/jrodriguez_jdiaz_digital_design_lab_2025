@@ -1,6 +1,3 @@
-// vgaController.sv — 640x480@60 (25.175 MHz)
-// HS/VS activos en bajo, blank_b=1 en área visible
-
 module vgaController #(
   parameter logic [9:0] HACTIVE = 10'd640,
   parameter logic [9:0] HFP     = 10'd16,
