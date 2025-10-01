@@ -1,0 +1,24 @@
+# VGA Red (4 bits)
+set_location_assignment PIN_AA15 -to VGA_R[0]
+set_location_assignment PIN_Y15  -to VGA_R[1]
+set_location_assignment PIN_AB16 -to VGA_R[2]
+set_location_assignment PIN_AA16 -to VGA_R[3]
+
+# VGA Green (4 bits)
+set_location_assignment PIN_W15  -to VGA_G[0]
+set_location_assignment PIN_Y16  -to VGA_G[1]
+set_location_assignment PIN_AA17 -to VGA_G[2]
+set_location_assignment PIN_AB17 -to VGA_G[3]
+
+# VGA Blue (4 bits)
+set_location_assignment PIN_AA18 -to VGA_B[0]
+set_location_assignment PIN_AB18 -to VGA_B[1]
+set_location_assignment PIN_AA19 -to VGA_B[2]
+set_location_assignment PIN_AB19 -to VGA_B[3]
+
+# VGA Sync
+set_location_assignment PIN_Y18  -to VGA_HS
+set_location_assignment PIN_AA20 -to VGA_VS
+
+# Reloj de 50 MHz
+set_location_assignment PIN_AF14 -to CLOCK_50
