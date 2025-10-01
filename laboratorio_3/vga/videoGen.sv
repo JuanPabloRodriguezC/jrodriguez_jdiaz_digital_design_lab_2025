@@ -1,5 +1,6 @@
 module videoGen(
     input  logic [9:0] x, y,
+	 input  logic blank_b,
     output logic [7:0] r, g, b
 );
 
