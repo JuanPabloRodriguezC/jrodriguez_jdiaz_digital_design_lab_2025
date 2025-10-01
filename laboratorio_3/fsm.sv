@@ -2,26 +2,23 @@ module FSM(
     // Inputs
     input  logic       clk,
     input  logic       rst,
-    input  logic       carta_recibida,      // Button pressed to select card
-    input  logic [3:0] card_id,             // Which card selected (0-15)
-    input  logic       timer_timeout,       // Timer reached 15 seconds
-    input  logic [3:0] random_card1,        // Random card from random generator
-    input  logic [3:0] random_card2,        // Random card from random generator
+    input  logic       carta_recibida,
+    input  logic [3:0] card_id,       
+    input  logic       timer_timeout,
+    input  logic [3:0] random_card1,
+    input  logic [3:0] random_card2,
     
     // Outputs
-    output logic [3:0] carta1,              // First selected card
-    output logic [3:0] carta2,              // Second selected card
-    output logic [3:0] puntaje1,            // Player 1 score
-    output logic [3:0] puntaje2,            // Player 2 score
-    output logic       turno,               // Current turn (0=P1, 1=P2)
-    output logic [4:0] num_cartas_disponibles, // Cards remaining
-    output logic       timer_reset,         // Signal to reset timer
-    output logic       timer_enable,        // Enable timer counting
+    output logic [3:0] carta1,
+    output logic [3:0] carta2,
+    output logic [3:0] puntaje1,
+    output logic [3:0] puntaje2,
+    output logic       turno,
+    output logic [4:0] num_cartas_disponibles,
+    output logic       timer_reset,
+    output logic       timer_enable,
     output logic [2:0] state_out            // Current state (for debugging)
-);
-
-    // State encoding
-    
+);    
     parameter S0_WAIT_CARD1    = 3'b000,
     parameter S1_WAIT_CARD2    = 3'b001,
     parameter S2_CHECK_MATCH   = 3'b010,
