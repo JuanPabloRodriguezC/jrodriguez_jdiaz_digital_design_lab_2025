@@ -9,4 +9,3 @@ module regContador(
     else if (cont) mantenimiento <= mantenimiento + 1;
   end
 endmodule
-

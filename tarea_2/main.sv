@@ -4,12 +4,11 @@ module main (
   input  logic m,              // botón de mantenimiento
   output logic [7:0] estado    // salida: registro de estado
 );
-
   // Señales internas
   logic cont, rst_tiempo, set_mux; 
   logic t0;
   logic [7:0] mantenimiento;
-  logic [7:0] data_in;
+  logic [7:0] mux_out;  // Señal de salida del mux
 
   // ============================
   // Instancia de la FSM (control)
@@ -47,11 +46,11 @@ module main (
   // ============================
   // Instancia del mux
   // ============================
-  mux mux_inst (
+  mux2 mux_inst (
     .d0(mantenimiento),
-    .d1(8h'ff),
-    .set_mux(set_mux)
-  );
+    .d1(8'hFF),  
+    .set_mux(set_mux),
+    .y(mux_out)  
 
   // ============================
   // Instancia del registro de estado
@@ -59,8 +58,8 @@ module main (
   regEstado regEstado_inst (
     .clk(clk),
     .reset(reset),
-    .data_in(data_in),
-    .estado(estado)
+    .data_in(mux_out),  
+    .data_out(estado)   
   );
 
 endmodule
