@@ -17,3 +17,5 @@ module decoder_segmentos (
 				default: segments = 7'b1111111;
 			endcase
     end
+
+endmodule

@@ -13,7 +13,7 @@ module main (
   // ============================
   // Instancia de la FSM (control)
   // ============================
-  FSM fsm_inst (
+  fsm fsm_inst (
     .m(m),
     .t0(t0),
     .clk(clk),
