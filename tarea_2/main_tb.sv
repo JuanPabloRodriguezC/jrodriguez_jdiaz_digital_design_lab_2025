@@ -145,8 +145,8 @@ module main_tb;
 
   // Generación de forma de onda (para GTKWave, ModelSim, etc.)
   initial begin
-    $dumpfile("tb_main.vcd");
-    $dumpvars(0, tb_main);
+    $dumpfile("main_tb.vcd");
+    $dumpvars(0, main_tb);
   end
 
 endmodule
