@@ -88,7 +88,17 @@ module top_lab3(
     .count_value    (timer_value)
   );
 
-  // ===== 4) Video Generation =====
+    // ===== 4) Generador de Posiciones Aleatorias =====
+  logic [3:0] card_positions [0:15];  // Índices aleatorios para cada carta
+  
+  card_position_randomizer u_randomizer(
+    .clk      (clk),
+    .rst      (~rst_n | rst),  // Reset con rst_n o rst de FSM
+    .seed     ({random_card1, random_card2}),  // Semilla de 8 bits
+    .positions(card_positions)
+  );
+
+  // ===== 5) Video Generation =====
   videoGen u_vid(
     .x(x),
     .y(y),
@@ -97,7 +107,7 @@ module top_lab3(
     .b(vga_b)
   );
 
-  // ===== 5) FSM =====
+  // ===== 6) FSM =====
   FSM u_FSM(
     // Inputs
     .clk                     (clk),
