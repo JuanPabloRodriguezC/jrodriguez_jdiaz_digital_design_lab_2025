@@ -1,6 +1,6 @@
 module top_lab3(
   // Clock y Reset
-  input  logic        clk,          // clock de placa (50 MHz) para VGA y FSM
+  input  logic        clk,          // clock de placa (50 MHz)
   input  logic        rst_n,        // reset activo en bajo
   
   // VGA Outputs
@@ -14,15 +14,15 @@ module top_lab3(
   output logic [7:0]  vga_b,
   
   // 7-Segment Displays
-  output logic [6:0]  seg_units,    // 7-segment units
-  output logic [6:0]  seg_tens,     // 7-segment tens
+  output logic [6:0]  seg_units,
+  output logic [6:0]  seg_tens,
+  
+  // Botones para control de cursor (KEY[3:0])
+  input  logic [3:0]  KEY,          // KEY[0]=select, KEY[1]=right, KEY[2]=left, KEY[3]=down
+  input  logic [1:0]  SW,           // SW[0]=up (ejemplo adicional)
   
   // FSM Inputs
-  input  logic        rst,           // Reset para FSM (adicional a rst_n)
-  input  logic        carta_recibida,
-  input  logic [3:0]  card_id,       
-  input  logic [3:0]  random_card1,
-  input  logic [3:0]  random_card2,
+  input  logic        rst,           // Reset para FSM
   
   // FSM Outputs
   output logic [3:0]  carta1,
@@ -33,9 +33,25 @@ module top_lab3(
   output logic [4:0]  num_cartas_disponibles,
   output logic        timer_reset,
   output logic        timer_enable,
-  output logic [2:0]  state_out 
+  output logic [2:0]  state_out,
+  
+  // Debug outputs
+  output logic [3:0]  cursor_pos_debug  // Ver posición del cursor en LEDs
 );
 
+  // ===== Señales internas =====
+  logic [3:0] cursor_position;
+  logic       card_selected_pulse;
+  logic [3:0] selected_card_id;
+  
+  // Botones invertidos (activos en bajo en la placa)
+  logic btn_select, btn_right, btn_left, btn_down, btn_up;
+  assign btn_select = ~KEY[0];
+  assign btn_right  = ~KEY[1];
+  assign btn_left   = ~KEY[2];
+  assign btn_down   = ~KEY[3];
+  assign btn_up     = SW[0];  // Usar switch para UP
+  
   // ===== 1) Pixel clock =====
   logic vgaclk;
   
@@ -51,10 +67,9 @@ module top_lab3(
     .clk_pix(vgaclk)
   );
 `endif
-
   assign vga_clk    = vgaclk;
   assign vga_sync_n = 1'b1;
-
+  
   // ===== 2) VGA Controller =====
   logic [9:0] x, y;
   logic       blank_b;
@@ -71,50 +86,68 @@ module top_lab3(
   );
   
   assign vga_blank_n = blank_b;
-
-  // ===== 3) Timer (countdown from 15) =====
+  
+  // ===== 3) Timer =====
   logic [3:0] timer_value;
-  logic       timer_timeout_internal;  // Señal interna del timer
+  logic       timer_timeout_internal;
   
   timer #(
     .CLOCK_FREQ(50_000_000)
   ) u_timer (
     .clk            (clk),
-    .rst            (timer_reset),      // Usar timer_reset de la FSM
-    .enable         (timer_enable),     // Usar timer_enable de la FSM
+    .rst            (timer_reset),
+    .enable         (timer_enable),
     .timeout        (timer_timeout_internal),
     .segments_units (seg_units),
     .segments_tens  (seg_tens),
     .count_value    (timer_value)
   );
-
-    // ===== 4) Generador de Posiciones Aleatorias =====
-  logic [3:0] card_positions [0:15];  // Índices aleatorios para cada carta
+  
+  // ===== 4) Controlador de Cursor =====
+  cursor_controller u_cursor(
+    .clk           (clk),
+    .rst           (rst),
+    .btn_up        (btn_up),
+    .btn_down      (btn_down),
+    .btn_left      (btn_left),
+    .btn_right     (btn_right),
+    .btn_select    (btn_select),
+    .cursor_pos    (cursor_position),
+    .card_selected (card_selected_pulse),
+    .selected_id   (selected_card_id)
+  );
+  
+  // Debug: mostrar posición del cursor
+  assign cursor_pos_debug = cursor_position;
+  
+  // ===== 5) Generador de Posiciones Aleatorias =====
+  logic [3:0] card_positions [0:15];
   
   card_position_randomizer u_randomizer(
     .clk      (clk),
-    .rst      (~rst_n | rst),  // Reset con rst_n o rst de FSM
-    .seed     ({random_card1, random_card2}),  // Semilla de 8 bits
+    .rst      (~rst_n | rst),
+    .seed     ({random_card1, random_card2}),
     .positions(card_positions)
   );
-
-  // ===== 5) Video Generation =====
+  
+  // ===== 6) Video Generation con Cursor =====
   videoGen u_vid(
-    .x(x),
-    .y(y),
-    .r(vga_r),
-    .g(vga_g),
-    .b(vga_b)
+    .x         (x),
+    .y         (y),
+    .cursor_pos(cursor_position),  // Mostrar cursor en VGA
+    .r         (vga_r),
+    .g         (vga_g),
+    .b         (vga_b)
   );
-
-  // ===== 6) FSM =====
+  
+  // ===== 7) FSM =====
   FSM u_FSM(
     // Inputs
     .clk                     (clk),
     .rst                     (rst),
-    .carta_recibida          (carta_recibida),
-    .card_id                (card_id),
-    .timer_timeout           (timer_timeout_internal),  // Conectar señal interna
+    .carta_recibida          (card_selected_pulse),      // Del cursor
+    .card_id                 (selected_card_id),         // Del cursor
+    .timer_timeout           (timer_timeout_internal),
     .random_card1            (random_card1),
     .random_card2            (random_card2),
     
@@ -129,5 +162,5 @@ module top_lab3(
     .timer_enable            (timer_enable),
     .state_out               (state_out)
   );
-
+  
 endmodule

@@ -1,17 +1,23 @@
-// videoGen.sv — Genera cartas de memoria (8 pares) en grid 4x4
-// Versión con símbolos de cartas: corazones, diamantes, tréboles, picas, etc.
+// videoGen.sv — Genera cartas de memoria con cursor de navegación
 module videoGen(
   input  logic [9:0] x,
   input  logic [9:0] y,
+  input  logic [3:0] cursor_pos,  // Posición del cursor (0-15)
   output logic [7:0] r,
   output logic [7:0] g,
   output logic [7:0] b
 );
+
+  // Detectar si estamos dentro de cada carta
   logic [15:0] incard;
   logic [15:0] symbol_pixel;
+  logic [15:0] cursor_border;  // Borde resaltado del cursor
   
   // Grid 4x4 de cartas: 640x480 -> cada celda ~160x120
   // Cartas de 80x60, centradas en cada celda
+  // Espaciado: 160 horizontal, 120 vertical
+  // Inicio: (40, 30)
+  
   genvar i, j;
   generate
     for (i = 0; i < 4; i++) begin : row
@@ -26,6 +32,14 @@ module videoGen(
           .x(x), .y(y),
           .left(LEFT), .top(TOP), .right(RIGHT), .bot(BOTTOM),
           .inrect(incard[CARD_ID])
+        );
+        
+        // Detectar borde extendido para cursor (5 píxeles extra)
+        rectgen u_cursor(
+          .x(x), .y(y),
+          .left(LEFT - 10'd5), .top(TOP - 10'd5), 
+          .right(RIGHT + 10'd5), .bot(BOTTOM + 10'd5),
+          .inrect(cursor_border[CARD_ID])
         );
       end
     end
@@ -173,12 +187,18 @@ module videoGen(
     endcase
   endfunction
   
-  // Dibuja las cartas con símbolos en colores
+  // Dibuja las cartas con símbolos y cursor
   always_comb begin
     // Fondo verde oscuro (como mesa de póker)
     r = 8'h00; g = 8'h40; b = 8'h00;
     
-    // Dibuja las cartas
+    // Primero dibuja el cursor si estamos en su borde
+    if (cursor_border[cursor_pos] && !incard[cursor_pos]) begin
+      // Borde del cursor: cian brillante
+      r = 8'h00; g = 8'hFF; b = 8'hFF;
+    end
+    
+    // Dibuja las cartas sobre el cursor
     for (int k = 0; k < 16; k++) begin
       if (incard[k]) begin
         automatic logic [9:0] card_x, card_y;
@@ -188,25 +208,49 @@ module videoGen(
         card_y = y - (10'd30 + (k/4) * 10'd120);
         symbol_id = k / 2;
         
-        // Borde de carta (3 píxeles) - dorado
-        if (card_x < 3 || card_x >= 77 || card_y < 3 || card_y >= 57) begin
-          r = 8'hD4; g = 8'hAF; b = 8'h37;  // Dorado
-        end else if (symbol_pixel[k]) begin
-          // Color del símbolo según tipo
-          case (symbol_id)
-            0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Corazón ROJO
-            1: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Diamante ROJO
-            2: begin r = 8'h00; g = 8'h00; b = 8'h00; end // Trébol NEGRO
-            3: begin r = 8'h00; g = 8'h00; b = 8'h00; end // Pica NEGRO
-            4: begin r = 8'hFF; g = 8'hD7; b = 8'h00; end // Estrella DORADA
-            5: begin r = 8'h00; g = 8'h00; b = 8'hFF; end // Círculo AZUL
-            6: begin r = 8'h80; g = 8'h00; b = 8'h80; end // Cuadrado PÚRPURA
-            7: begin r = 8'hFF; g = 8'hCC; b = 8'h00; end // Pikachu AMARILLO
-            default: begin r = 8'h00; g = 8'h00; b = 8'h00; end
-          endcase
+        // Si es la carta con el cursor, usar borde cian más grueso
+        if (k == cursor_pos) begin
+          // Borde de carta seleccionada (5 píxeles) - CIAN
+          if (card_x < 5 || card_x >= 75 || card_y < 5 || card_y >= 55) begin
+            r = 8'h00; g = 8'hFF; b = 8'hFF;  // Cian brillante
+          end else if (symbol_pixel[k]) begin
+            // Color del símbolo según tipo
+            case (symbol_id)
+              0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Corazón ROJO
+              1: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Diamante ROJO
+              2: begin r = 8'h00; g = 8'h00; b = 8'h00; end // Trébol NEGRO
+              3: begin r = 8'h00; g = 8'h00; b = 8'h00; end // Pica NEGRO
+              4: begin r = 8'hFF; g = 8'hD7; b = 8'h00; end // Estrella DORADA
+              5: begin r = 8'h00; g = 8'h00; b = 8'hFF; end // Círculo AZUL
+              6: begin r = 8'h80; g = 8'h00; b = 8'h80; end // Cuadrado PÚRPURA
+              7: begin r = 8'hFF; g = 8'hCC; b = 8'h00; end // Pikachu AMARILLO
+              default: begin r = 8'h00; g = 8'h00; b = 8'h00; end
+            endcase
+          end else begin
+            // Fondo de carta: blanco cremoso
+            r = 8'hFF; g = 8'hF8; b = 8'hE8;
+          end
         end else begin
-          // Fondo de carta: blanco cremoso
-          r = 8'hFF; g = 8'hF8; b = 8'hE8;
+          // Cartas normales con borde dorado
+          if (card_x < 3 || card_x >= 77 || card_y < 3 || card_y >= 57) begin
+            r = 8'hD4; g = 8'hAF; b = 8'h37;  // Dorado
+          end else if (symbol_pixel[k]) begin
+            // Color del símbolo según tipo
+            case (symbol_id)
+              0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Corazón ROJO
+              1: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Diamante ROJO
+              2: begin r = 8'h00; g = 8'h00; b = 8'h00; end // Trébol NEGRO
+              3: begin r = 8'h00; g = 8'h00; b = 8'h00; end // Pica NEGRO
+              4: begin r = 8'hFF; g = 8'hD7; b = 8'h00; end // Estrella DORADA
+              5: begin r = 8'h00; g = 8'h00; b = 8'hFF; end // Círculo AZUL
+              6: begin r = 8'h80; g = 8'h00; b = 8'h80; end // Cuadrado PÚRPURA
+              7: begin r = 8'hFF; g = 8'hCC; b = 8'h00; end // Pikachu AMARILLO
+              default: begin r = 8'h00; g = 8'h00; b = 8'h00; end
+            endcase
+          end else begin
+            // Fondo de carta: blanco cremoso
+            r = 8'hFF; g = 8'hF8; b = 8'hE8;
+          end
         end
       end
     end

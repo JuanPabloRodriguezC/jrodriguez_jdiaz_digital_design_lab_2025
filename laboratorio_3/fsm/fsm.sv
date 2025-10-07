@@ -1,4 +1,4 @@
-module fsm(
+module FSM(
     // Inputs
     input  logic       clk,
     input  logic       rst,
@@ -20,15 +20,15 @@ module fsm(
     output logic [2:0] state_out            // Current state (for debugging)
 );    
 
-typedef enum logic [2:0] {
-        S0_WAIT_CARD1    = 3'b000,  
-        S1_WAIT_CARD2    = 3'b001,  
-        S2_CHECK_MATCH   = 3'b010,  
-        S3_PLAYER_SCORED = 3'b011,  
+    // State encoding
+    typedef enum logic [2:0] {
+        S0_WAIT_CARD1    = 3'b000,
+        S1_WAIT_CARD2    = 3'b001,
+        S2_CHECK_MATCH   = 3'b010,
+        S3_PLAYER_SCORED = 3'b011,
         S4_RANDOM_SELECT = 3'b100,
-        S5_GAME_OVER     = 3'b101   
+        S5_GAME_OVER     = 3'b101
     } state_t;
-    
     
     state_t state, next_state;
     
@@ -39,9 +39,11 @@ typedef enum logic [2:0] {
     logic [4:0] cartas_disponibles_reg;
     logic       cards_match;
     
+	 // Check if cards match
     assign cards_match = (carta1_reg == carta2_reg);
     
 
+	 // State register
     always_ff @(posedge clk or posedge rst) begin
         if (rst)
             state <= S0_WAIT_CARD1;
@@ -49,6 +51,7 @@ typedef enum logic [2:0] {
             state <= next_state;
     end
     
+	 //Next state logic
     always_comb begin
         // Default: stay in current state
         next_state = state;
@@ -76,7 +79,7 @@ typedef enum logic [2:0] {
             end
             
             S3_PLAYER_SCORED: begin
-                if (cartas_disponibles_reg == 0)
+                if (cartas_disponibles_reg == 0) //check if there are no more cards, maybe <= 2
                     next_state = S5_GAME_OVER;
                 else
                     next_state = S0_WAIT_CARD1;  // Same player continues
@@ -93,21 +96,25 @@ typedef enum logic [2:0] {
             default: next_state = S0_WAIT_CARD1;
         endcase
     end
+	 
+	 //Output and register logic
     
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            carta1_reg <= 0;
-            carta2_reg <= 0;
-            puntaje1_reg <= 0;
-            puntaje2_reg <= 0;
-            turno_reg <= 0;
-            cartas_disponibles_reg <= 16;
-        end
+            carta1_reg <= 4'h0;
+            carta2_reg <= 4'h0;
+            puntaje1_reg <= 4'h0;
+            puntaje2_reg <= 4'h0;
+            turno_reg <= 1'b0;
+            cartas_disponibles_reg <= 5'd16;
+			end
+				
         else begin
             case (state)
                 S0_WAIT_CARD1: begin
                     if (carta_recibida) begin
                         carta1_reg <= card_id;  // Store first card
+								carta2_reg <= 4'h0;  // Clear second card
                     end
                 end
                 
@@ -127,13 +134,13 @@ typedef enum logic [2:0] {
                 
                 S3_PLAYER_SCORED: begin
                     // Increment current player's score
-                    if (turno_reg == 0)
-                        puntaje1_reg <= puntaje1_reg + 1;
+                    if (turno_reg == 1'b0)
+                        puntaje1_reg <= puntaje1_reg + 4'h1;
                     else
-                        puntaje2_reg <= puntaje2_reg + 1;
+                        puntaje2_reg <= puntaje2_reg + 4'h1;;
                     
                     // Reduce available cards
-                    cartas_disponibles_reg <= cartas_disponibles_reg - 2;
+                    cartas_disponibles_reg <= cartas_disponibles_reg - 5'd2;
                     
                     // turno_reg stays same (same player continues)
                 end
@@ -151,40 +158,45 @@ typedef enum logic [2:0] {
         end
     end
     
+// Timer control logic
     always_comb begin
-        timer_enable = 0;
-        timer_reset = 0;
+        timer_enable = 1'b0;
+        timer_reset = 1'b0;
         
         case (state)
             S0_WAIT_CARD1: begin
-                timer_enable = 1;  // Timer runs while waiting
-                timer_reset = 0;
+                timer_enable = 1'b1; //time runs while waiting
+                timer_reset = 1'b0;
             end
             
             S1_WAIT_CARD2: begin
-                timer_enable = 1;
-                timer_reset = 0;
+                timer_enable = 1'b1;
+                timer_reset = 1'b0;
             end
             
             S2_CHECK_MATCH: begin
-                timer_enable = 0;
-                if (!cards_match)
-                    timer_reset = 1;
+                timer_enable = 1'b0;
+                timer_reset = 1'b1;  // Reset timer after checking
             end
             
             S3_PLAYER_SCORED: begin
-                timer_enable = 0;
-                timer_reset = 1;
+                timer_enable = 1'b0;
+                timer_reset = 1'b1;
             end
             
             S4_RANDOM_SELECT: begin
-                timer_enable = 0;
-                timer_reset = 1;
+                timer_enable = 1'b0;
+                timer_reset = 1'b1;
             end
             
             S5_GAME_OVER: begin
-                timer_enable = 0;
-                timer_reset = 0;
+                timer_enable = 1'b0;
+                timer_reset = 1'b0;
+            end
+            
+            default: begin
+                timer_enable = 1'b0;
+                timer_reset = 1'b0;
             end
         endcase
     end
