@@ -1,3 +1,4 @@
+// Code your design here
 module FSM(
     // Inputs
     input  logic       clk,
@@ -19,12 +20,14 @@ module FSM(
     output logic       timer_enable,
     output logic [2:0] state_out            // Current state (for debugging)
 );    
-    parameter S0_WAIT_CARD1    = 3'b000,
-    parameter S1_WAIT_CARD2    = 3'b001,
-    parameter S2_CHECK_MATCH   = 3'b010,
-    parameter S3_PLAYER_SCORED = 3'b011,
-    parameter S4_RANDOM_SELECT = 3'b100,
-    parameter S5_GAME_OVER     = 3'b101
+    typedef enum logic [2:0] {
+        S0_WAIT_CARD1    = 3'b000,  
+        S1_WAIT_CARD2    = 3'b001,  
+        S2_CHECK_MATCH   = 3'b010,  
+        S3_PLAYER_SCORED = 3'b011,  
+        S4_RANDOM_SELECT = 3'b100,
+        S5_GAME_OVER     = 3'b101   
+    } state_t;
     
     
     state_t state, next_state;
