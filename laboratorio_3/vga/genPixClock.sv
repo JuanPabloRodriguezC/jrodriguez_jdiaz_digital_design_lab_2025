@@ -1,4 +1,4 @@
-module gen_pixclk #(
+module genPixClock #(
   parameter int SYS_CLK_HZ = 50_000_000,
   parameter int PIX_CLK_HZ = 25_000_000 // divide la frecuencia entre la necesaria.
 )(

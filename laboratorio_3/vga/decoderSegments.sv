@@ -1,4 +1,4 @@
-module decoder_segmentos (
+module decoderSegments (
     input  logic [3:0] data,
     output logic [6:0] segments
 );

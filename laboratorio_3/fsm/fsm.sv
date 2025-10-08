@@ -1,4 +1,4 @@
-module FSM(
+module fsm(
     // Inputs
     input  logic       clk,
     input  logic       rst,

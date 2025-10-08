@@ -1,4 +1,4 @@
-module card_position_randomizer(
+module cardPositionRandomizer(
   input  logic        clk,
   input  logic        rst,
   input  logic [7:0]  seed,       // Semilla para variar la aleatorización

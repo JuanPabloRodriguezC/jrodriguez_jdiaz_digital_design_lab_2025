@@ -8,7 +8,6 @@ module timer #(
   output logic timeout,
   output logic [6:0] segments_units,
   output logic [6:0] segments_tens,
-  output logic [3:0] count_value
 );
 
   logic [31:0] counter;
@@ -37,7 +36,6 @@ module timer #(
   end
   
   assign timeout = (seconds == 0);
-  assign count_value = seconds;
 
   // Split into tens and units digits
   always_comb begin

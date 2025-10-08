@@ -1,5 +1,5 @@
 // Controlador de cursor para navegar entre cartas
-module cursor_controller(
+module cursorController(
     input  logic       clk,
     input  logic       rst,
     

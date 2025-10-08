@@ -1,6 +1,6 @@
 // Generador de números pseudo-aleatorios usando LFSR
 // Genera continuamente valores random para random_card1 y random_card2
-module random_generator(
+module randomGenerator(
     input  logic       clk,
     input  logic       rst,
     output logic [3:0] random_card1,  // Valor 0-15

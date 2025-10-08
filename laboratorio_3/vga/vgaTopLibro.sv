@@ -1,4 +1,4 @@
-module vga_top_libro(
+module vgaTopLibro(
   input  logic        clk,          // clock de placa (50 MHz)
   input  logic        rst_n,        // reset activo en bajo
   output logic        hsync,
@@ -13,12 +13,8 @@ module vga_top_libro(
   output logic [6:0]  seg_tens      // 7-segment tens
 );
 
-  // ===== 1) Pixel clock =====
   logic vgaclk;
 
-`ifdef USE_PLL
-  pll vgapll(.inclk0(clk), .c0(vgaclk));
-`else
   gen_pixclk #(
     .SYS_CLK_HZ(50_000_000),
     .PIX_CLK_HZ(25_000_000)
@@ -27,7 +23,6 @@ module vga_top_libro(
     .rst    (~rst_n),
     .clk_pix(vgaclk)
   );
-`endif
 
   assign vga_clk    = vgaclk;
   assign vga_sync_n = 1'b1;
