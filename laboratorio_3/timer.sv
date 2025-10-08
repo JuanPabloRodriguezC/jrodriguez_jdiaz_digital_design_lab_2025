@@ -44,12 +44,12 @@ module timer #(
   end
     
   // Instantiate 7-segment decoders
-  decoder_segmentos display_decenas (
+  decoderSegments display_decenas (
     .data(tens_digit),
     .segments(segments_tens)
   );
     
-  decoder_segmentos display_unidades (
+  decoderSegments display_unidades (
     .data(units_digit),
     .segments(segments_units)
   );

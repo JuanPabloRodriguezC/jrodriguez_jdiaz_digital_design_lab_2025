@@ -28,14 +28,14 @@ module videoGen(
         localparam logic [9:0] BOTTOM = TOP  + 10'd60;
         localparam int CARD_ID = i*4 + j;
         
-        rectgen u_card(
+        rectGen u_card(
           .x(x), .y(y),
           .left(LEFT), .top(TOP), .right(RIGHT), .bot(BOTTOM),
           .inrect(incard[CARD_ID])
         );
         
         // Detectar borde extendido para cursor (5 píxeles extra)
-        rectgen u_cursor(
+        rectGen u_cursor(
           .x(x), .y(y),
           .left(LEFT - 10'd5), .top(TOP - 10'd5), 
           .right(RIGHT + 10'd5), .bot(BOTTOM + 10'd5),
@@ -258,7 +258,7 @@ module videoGen(
 endmodule
 
 // --- Rectángulo ---
-module rectgen(
+module rectGen(
   input  logic [9:0] x, y,
   input  logic [9:0] left, top, right, bot,
   output logic       inrect
