@@ -12,9 +12,9 @@ module fsm(
     output logic       selector_carta,
     output logic       timer_reset,
     output logic       timer_enable,
-    output logic       puntaje1_reg,
-    output logic       puntaje2_reg,
-    output logic       sig_carta_aleatoria // señal para pedir cartas aleatorias
+    output logic [3:0] puntaje1_reg,
+    output logic [3:0] puntaje2_reg,
+    output logic       sig_carta_aleatoria
 );    
 
     // State encoding
@@ -35,10 +35,10 @@ module fsm(
 
     assign sig_carta_aleatoria = (state == S4_RANDOM_SELECT);
     
-	 // Check if cards match
+    // Check if cards match
     assign cards_match = (carta1_reg == carta2_reg);
 
-	 // State register
+    // State register
     always_ff @(posedge clk or posedge rst) begin
         if (rst)
             state <= S0_WAIT_CARD1;
@@ -46,7 +46,7 @@ module fsm(
             state <= next_state;
     end
     
-	 //Next state logic
+    // Next state logic
     always_comb begin
         next_state = state;
         
@@ -73,7 +73,7 @@ module fsm(
             end
             
             S3_PLAYER_SCORED: begin
-                if (cartas_disponibles_reg == 0) //check if there are no more cards, maybe <= 2
+                if (cartas_disponibles_reg <= 2)  // Si quedan 2 o menos cartas
                     next_state = S5_GAME_OVER;
                 else
                     next_state = S0_WAIT_CARD1;  // Same player continues
@@ -90,21 +90,26 @@ module fsm(
             default: next_state = S0_WAIT_CARD1;
         endcase
     end
-	 
-	 //Output and register logic
     
+    // Output and register logic
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             puntaje1_reg <= 4'h0;
             puntaje2_reg <= 4'h0;
             turno <= 1'b0;
             cartas_disponibles_reg <= 5'd16;
-			end
-				
+            selector_carta <= 1'b0;
+        end
         else begin
             case (state)
-                S0_WAIT_CARD1: selector_carta = 1'b0;
-                S1_WAIT_CARD2: selector_carta = 1'b1;
+                S0_WAIT_CARD1: begin
+                    selector_carta <= 1'b0;
+                end
+                
+                S1_WAIT_CARD2: begin
+                    selector_carta <= 1'b1;
+                end
+                
                 S2_CHECK_MATCH: begin
                     if (!cards_match) begin
                         turno <= ~turno;
@@ -115,24 +120,24 @@ module fsm(
                     if (turno == 1'b0)
                         puntaje1_reg <= puntaje1_reg + 4'h1;
                     else
-                        puntaje2_reg <= puntaje2_reg + 4'h1;;
+                        puntaje2_reg <= puntaje2_reg + 4'h1;
                     
                     cartas_disponibles_reg <= cartas_disponibles_reg - 5'd2;
-                    
                 end
+                
                 default: ;
             endcase
         end
     end
     
-// Timer control logic
+    // Timer control logic
     always_comb begin
         timer_enable = 1'b0;
         timer_reset = 1'b0;
         
         case (state)
             S0_WAIT_CARD1: begin
-                timer_enable = 1'b1; //time runs while waiting
+                timer_enable = 1'b1; // Timer runs while waiting
                 timer_reset = 1'b0;
             end
             
