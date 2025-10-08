@@ -54,6 +54,14 @@ module topLab(
   assign btn_left   = ~KEY[2];
   assign btn_down   = ~KEY[3];
   assign btn_up     = SW[0];  // Usar switch para UP
+
+  // ===== 2) VGA Controller =====
+  logic [9:0] x, y;
+  assign vga_sync_n = 1'b1;
+
+  // ===== 3) Timer =====
+  logic [3:0] timer_value;
+  logic       timer_timeout_internal;
   
   genPixClock #(
     .SYS_CLK_HZ(50_000_000),
@@ -62,30 +70,18 @@ module topLab(
     .clk    (clk),
     .rst    (~rst_n),
     .clk_pix(vga_clk)
-  );
-
-  assign vga_sync_n = 1'b1;
-  
-  // ===== 2) VGA Controller =====
-  logic [9:0] x, y;
-  logic       blank_b;
+  );  
   
   vgaController u_ctrl(
     .vgaclk (vgaclk),
     .rst    (~rst_n),
     .hsync  (hsync),
     .vsync  (vsync),
-    .sync_b (),
-    .blank_b(blank_b),
+    .sync_b (vga_sync_n),
+    .blank_b(vga_blank_b),
     .x      (x),
     .y      (y)
   );
-  
-  assign vga_blank_n = blank_b;
-  
-  // ===== 3) Timer =====
-  logic [3:0] timer_value;
-  logic       timer_timeout_internal;
   
   timer #(
     .CLOCK_FREQ(50_000_000)
@@ -140,22 +136,17 @@ module topLab(
     // Inputs
     .clk                     (clk),
     .rst                     (rst),
-    .carta_recibida          (card_selected_pulse),      // Del cursor
-    .card_id                 (selected_card_id),         // Del cursor
+    .carta_recibida          (carta_recibida),
     .timer_timeout           (timer_timeout_internal),
-    .random_card1            (random_card1),
-    .random_card2            (random_card2),
+    .carta1_reg              (carta1),
+    .carta2_reg              (carta2),
     
     // Outputs
-    .carta1                  (carta1),
-    .carta2                  (carta2),
-    .puntaje1                (puntaje1),
-    .puntaje2                (puntaje2),
     .turno                   (turno),
-    .num_cartas_disponibles  (num_cartas_disponibles),
+    .selector_carta          (selector_carta),
     .timer_reset             (timer_reset),
     .timer_enable            (timer_enable),
-    .state_out               (state_out)
+    .sig_carta_aleatoria     (sig_carta_aleatoria)
   );
   
 endmodule

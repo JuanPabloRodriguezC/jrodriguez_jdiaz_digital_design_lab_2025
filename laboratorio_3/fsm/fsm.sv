@@ -2,22 +2,19 @@ module fsm(
     // Inputs
     input  logic       clk,
     input  logic       rst,
-    input  logic       carta_recibida,
-    input  logic [3:0] card_id,       
+    input  logic       carta_recibida,     
     input  logic       timer_timeout,
-    input  logic [3:0] random_card1,
-    input  logic [3:0] random_card2,
+    input  logic [3:0] carta_1_reg,
+    input  logic [3:0] carta_2_reg,
     
     // Outputs
-    output logic [3:0] carta1,
-    output logic [3:0] carta2,
-    output logic [3:0] puntaje1,
-    output logic [3:0] puntaje2,
     output logic       turno,
-    output logic [4:0] num_cartas_disponibles,
+    output logic       selector_carta,
     output logic       timer_reset,
     output logic       timer_enable,
-    output logic [2:0] state_out            // Current state (for debugging)
+    output logic       puntaje1_reg,
+    output logic       puntaje2_reg,
+    output logic       sig_carta_aleatoria // señal para pedir cartas aleatorias
 );    
 
     // State encoding
@@ -32,16 +29,20 @@ module fsm(
     
     state_t state, next_state;
     
+    assign state = S0_WAIT_CARD1;
+    
     // Internal registers
-    logic [3:0] carta1_reg, carta2_reg;
-    logic [3:0] puntaje1_reg, puntaje2_reg;
-    logic       turno_reg;
     logic [4:0] cartas_disponibles_reg;
     logic       cards_match;
+
+    assign turno = 1'b0;
+    assign puntaje1_reg = 4'h0;
+    assign puntaje2_reg = 4'h0;
+    assign cartas_disponibles_reg = 5'd16;
+    assign sig_carta_aleatoria = (state == S4_RANDOM_SELECT);
     
 	 // Check if cards match
     assign cards_match = (carta1_reg == carta2_reg);
-    
 
 	 // State register
     always_ff @(posedge clk or posedge rst) begin
@@ -53,7 +54,6 @@ module fsm(
     
 	 //Next state logic
     always_comb begin
-        // Default: stay in current state
         next_state = state;
         
         case (state)
@@ -101,59 +101,31 @@ module fsm(
     
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            carta1_reg <= 4'h0;
-            carta2_reg <= 4'h0;
             puntaje1_reg <= 4'h0;
             puntaje2_reg <= 4'h0;
-            turno_reg <= 1'b0;
+            turno <= 1'b0;
             cartas_disponibles_reg <= 5'd16;
 			end
 				
         else begin
             case (state)
-                S0_WAIT_CARD1: begin
-                    if (carta_recibida) begin
-                        carta1_reg <= card_id;  // Store first card
-								carta2_reg <= 4'h0;  // Clear second card
-                    end
-                end
-                
-                S1_WAIT_CARD2: begin
-                    if (carta_recibida) begin
-                        carta2_reg <= card_id;  // Store second card
-                    end
-                end
                 
                 S2_CHECK_MATCH: begin
                     if (!cards_match) begin
-                        // No match: change turn for next state
                         turno_reg <= ~turno_reg;
                     end
-                    // If match, turno stays same (handled in S3)
                 end
                 
                 S3_PLAYER_SCORED: begin
-                    // Increment current player's score
                     if (turno_reg == 1'b0)
                         puntaje1_reg <= puntaje1_reg + 4'h1;
                     else
                         puntaje2_reg <= puntaje2_reg + 4'h1;;
                     
-                    // Reduce available cards
                     cartas_disponibles_reg <= cartas_disponibles_reg - 5'd2;
                     
-                    // turno_reg stays same (same player continues)
                 end
-                
-                S4_RANDOM_SELECT: begin
-                    // Store random cards
-                    carta1_reg <= random_card1;
-                    carta2_reg <= random_card2;
-                end
-                
-                S5_GAME_OVER: begin
-                    // Nothing to update, game is over
-                end
+                default: ;
             endcase
         end
     end
@@ -191,7 +163,7 @@ module fsm(
             
             S5_GAME_OVER: begin
                 timer_enable = 1'b0;
-                timer_reset = 1'b0;
+                timer_reset = 1'b1;
             end
             
             default: begin
@@ -200,13 +172,5 @@ module fsm(
             end
         endcase
     end
-    
-    assign carta1 = carta1_reg;
-    assign carta2 = carta2_reg;
-    assign puntaje1 = puntaje1_reg;
-    assign puntaje2 = puntaje2_reg;
-    assign turno = turno_reg;
-    assign num_cartas_disponibles = cartas_disponibles_reg;
-    assign state_out = state;
 
 endmodule
