@@ -4,8 +4,8 @@ module fsm(
     input  logic       rst,
     input  logic       carta_recibida,     
     input  logic       timer_timeout,
-    input  logic [3:0] carta_1_reg,
-    input  logic [3:0] carta_2_reg,
+    input  logic [3:0] carta1_reg,
+    input  logic [3:0] carta2_reg,
     
     // Outputs
     output logic       turno,
@@ -29,16 +29,10 @@ module fsm(
     
     state_t state, next_state;
     
-    assign state = S0_WAIT_CARD1;
-    
     // Internal registers
     logic [4:0] cartas_disponibles_reg;
     logic       cards_match;
 
-    assign turno = 1'b0;
-    assign puntaje1_reg = 4'h0;
-    assign puntaje2_reg = 4'h0;
-    assign cartas_disponibles_reg = 5'd16;
     assign sig_carta_aleatoria = (state == S4_RANDOM_SELECT);
     
 	 // Check if cards match
@@ -109,15 +103,16 @@ module fsm(
 				
         else begin
             case (state)
-                
+                S0_WAIT_CARD1: selector_carta = 1'b0;
+                S1_WAIT_CARD2: selector_carta = 1'b1;
                 S2_CHECK_MATCH: begin
                     if (!cards_match) begin
-                        turno_reg <= ~turno_reg;
+                        turno <= ~turno;
                     end
                 end
                 
                 S3_PLAYER_SCORED: begin
-                    if (turno_reg == 1'b0)
+                    if (turno == 1'b0)
                         puntaje1_reg <= puntaje1_reg + 4'h1;
                     else
                         puntaje2_reg <= puntaje2_reg + 4'h1;;
@@ -163,7 +158,7 @@ module fsm(
             
             S5_GAME_OVER: begin
                 timer_enable = 1'b0;
-                timer_reset = 1'b1;
+                timer_reset = 1'b0;
             end
             
             default: begin

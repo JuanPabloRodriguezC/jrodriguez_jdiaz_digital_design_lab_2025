@@ -3,27 +3,33 @@ module cursorController(
     input  logic       clk,
     input  logic       rst,
     
-    // Botones de dirección (KEY[3:0] en la placa)
-    input  logic       btn_up,      // Mover arriba
-    input  logic       btn_down,    // Mover abajo
-    input  logic       btn_left,    // Mover izquierda
-    input  logic       btn_right,   // Mover derecha
-    input  logic       btn_select,  // Seleccionar carta
+    // Botones de dirección
+    input  logic       btn_up,
+    input  logic       btn_down,
+    input  logic       btn_left,
+    input  logic       btn_right,
+    input  logic       btn_select,
+    
+    // FSM control
+    input  logic       selector_carta,  // 0=selecting card1, 1=selecting card2
     
     // Salidas
-    output logic [3:0] cursor_pos,  // Posición actual (0-15)
-    output logic       card_selected, // Pulso cuando se selecciona
-    output logic [3:0] selected_id    // ID de la carta seleccionada
+    output logic [3:0] cursor_pos,      // Posición actual del cursor
+    output logic       carta_recibida,  // Pulso cuando se selecciona una carta
+    output logic [3:0] carta1_id,       // ID de la primera carta seleccionada
+    output logic [3:0] carta2_id        // ID de la segunda carta seleccionada
 );
 
     // Registro de posición del cursor
     logic [3:0] cursor_reg;
+    logic [3:0] carta1_reg;
+    logic [3:0] carta2_reg;
     
-    // Detección de flancos para los botones (anti-rebote)
-    logic [4:0] btn_prev;  // 5 bits para 5 botones
+    // Detección de flancos para los botones
+    logic [4:0] btn_prev;
     logic btn_up_edge, btn_down_edge, btn_left_edge, btn_right_edge, btn_select_edge;
     
-    // Debounce counter (para evitar múltiples pulsaciones)
+    // Debounce counter
     logic [19:0] debounce_counter;
     logic debounce_ready;
     
@@ -93,14 +99,29 @@ module cursorController(
     // Señal de selección (pulso de un ciclo)
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            card_selected <= 1'b0;
+            carta1_reg <= 4'h0;
+            carta2_reg <= 4'h0;
+            carta_recibida <= 1'b0;
         end else begin
-            card_selected <= btn_select_edge;
+            carta_recibida <= 1'b0;  // Default: no pulse
+            
+            if (btn_select_edge) begin
+                if (selector_carta == 1'b0) begin
+                    // Selecting first card
+                    carta1_reg <= cursor_reg;
+                    carta_recibida <= 1'b1;
+                end else begin
+                    // Selecting second card
+                    carta2_reg <= cursor_reg;
+                    carta_recibida <= 1'b1;
+                end
+            end
         end
     end
     
     // Salidas
     assign cursor_pos = cursor_reg;
-    assign selected_id = cursor_reg;  // El ID es igual a la posición
+    assign carta1_id = carta1_reg;
+    assign carta2_id = carta2_reg;
 
 endmodule

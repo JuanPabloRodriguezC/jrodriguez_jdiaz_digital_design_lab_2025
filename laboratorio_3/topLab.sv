@@ -46,9 +46,17 @@ module topLab(
   logic        timer_reset,
   logic        timer_enable,
   logic [2:0]  state_out,
+
+  logic       carta_recibida;
+  logic       selector_carta;
+
+  logic [3:0] carta1_id, carta2_id;
+  logic       carta_recibida;
+  logic       selector_carta;
   
   // Botones invertidos (activos en bajo en la placa)
   logic btn_select, btn_right, btn_left, btn_down, btn_up;
+
   assign btn_select = ~KEY[0];
   assign btn_right  = ~KEY[1];
   assign btn_left   = ~KEY[2];
@@ -103,10 +111,12 @@ module topLab(
     .btn_left      (btn_left),
     .btn_right     (btn_right),
     .btn_select    (btn_select),
+    .selector_carta(selector_carta),    // From FSM
     .cursor_pos    (cursor_position),
-    .card_selected (card_selected_pulse),
-    .selected_id   (selected_card_id)
-  );
+    .carta_recibida(carta_recibida),    // To FSM
+    .carta1_id     (carta1_id),         // To FSM
+    .carta2_id     (carta2_id)          // To FSM
+);
   
   // Debug: mostrar posición del cursor
   assign cursor_pos_debug = cursor_position;
@@ -130,23 +140,20 @@ module topLab(
     .g         (vga_g),
     .b         (vga_b)
   );
-  
-  // ===== 7) FSM =====
-  fsm u_FSM(
-    // Inputs
-    .clk                     (clk),
-    .rst                     (rst),
-    .carta_recibida          (carta_recibida),
-    .timer_timeout           (timer_timeout_internal),
-    .carta1_reg              (carta1),
-    .carta2_reg              (carta2),
+
+  fsm u_fsm(
+    .clk                 (clk),
+    .rst                 (rst),
+    .carta_recibida      (carta_recibida),    // From controller
+    .timer_timeout       (timer_timeout_internal),
+    .carta_1_reg         (carta1_id),          // From controller
+    .carta_2_reg         (carta2_id),          // From controller
     
-    // Outputs
-    .turno                   (turno),
-    .selector_carta          (selector_carta),
-    .timer_reset             (timer_reset),
-    .timer_enable            (timer_enable),
+    .turno               (turno),
+    .selector_carta      (selector_carta),     // To controller
+    .timer_reset         (timer_reset),
+    .timer_enable        (timer_enable),
     .sig_carta_aleatoria     (sig_carta_aleatoria)
-  );
+);
   
 endmodule
