@@ -40,6 +40,7 @@ module topLab(
   logic [3:0] puntaje1;
   logic [3:0] puntaje2;
   logic       sig_carta_aleatoria;
+  logic [15:0] cards_face_up;  // Estado de cartas volteadas
   
   // VGA señales
   logic [9:0] x, y;
@@ -52,11 +53,11 @@ module topLab(
   logic btn_select, btn_right, btn_left, btn_down, btn_up;
   logic rst_fsm;
 
-  assign btn_select = ~KEY[0];
+  assign btn_up     = ~KEY[0];
   assign btn_right  = ~KEY[1];
   assign btn_left   = ~KEY[2];
   assign btn_down   = ~KEY[3];
-  assign btn_up     = SW[0];
+  assign btn_select = SW[0];
   assign rst_fsm    = SW[1];
 
   // Asignaciones VGA

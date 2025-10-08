@@ -1,11 +1,12 @@
 // videoGen.sv — Genera cartas de memoria con cursor (OPTIMIZADO)
 module videoGen(
-  input  logic [9:0] x,
-  input  logic [9:0] y,
-  input  logic [3:0] cursor_pos,  // Posición del cursor (0-15)
-  output logic [7:0] r,
-  output logic [7:0] g,
-  output logic [7:0] b
+  input  logic [9:0]  x,
+  input  logic [9:0]  y,
+  input  logic [3:0]  cursor_pos,     // Posición del cursor (0-15)
+  input  logic [15:0] cards_face_up,  // Bit en 1 = carta volteada (boca arriba)
+  output logic [7:0]  r,
+  output logic [7:0]  g,
+  output logic [7:0]  b
 );
 
   // Detectar si estamos dentro de cada carta
