@@ -15,15 +15,9 @@ module randomGenerator(
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             lfsr1 <= 16'hACE1;
-        end else begin
-            lfsr1 <= {lfsr1[14:0], feedback1};
-        end
-    end
-    
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
             lfsr2 <= 16'h5EED;
         end else begin
+            lfsr1 <= {lfsr1[14:0], feedback1};
             lfsr2 <= {lfsr2[14:0], feedback2};
         end
     end
