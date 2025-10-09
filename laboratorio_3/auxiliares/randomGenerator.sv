@@ -1,17 +1,19 @@
 module randomGenerator(
     input  logic       clk,
     input  logic       rst,
+    input  logic       request_random,  // Pulse when FSM needs random cards
     input  logic [15:0] cards_matched,
     output logic [3:0] random_card1,
-    output logic [3:0] random_card2
+    output logic [3:0] random_card2,
+    output logic       random_ready     // Indicates cards are valid
 );
     logic [15:0] lfsr1, lfsr2;
     logic feedback1, feedback2;
-    logic [3:0] lfsr1_raw, lfsr2_raw;
     
     assign feedback1 = lfsr1[15] ^ lfsr1[14] ^ lfsr1[12] ^ lfsr1[3];
     assign feedback2 = lfsr2[15] ^ lfsr2[13] ^ lfsr2[11] ^ lfsr2[1];
     
+    // LFSR runs continuously
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             lfsr1 <= 16'hACE1;
@@ -22,40 +24,64 @@ module randomGenerator(
         end
     end
     
-    assign lfsr1_raw = lfsr1[3:0];
-    assign lfsr2_raw = lfsr2[7:4];
+    // Sequential card selection
+    typedef enum logic [1:0] {
+        IDLE,
+        FIND_CARD1,
+        FIND_CARD2,
+        DONE
+    } state_t;
     
-    // Validar y ajustar random_card1
-    always_comb begin
-        automatic logic [3:0] temp1;
-        automatic int attempts;
-        
-        temp1 = lfsr1_raw;
-        attempts = 0;
-        
-        // Buscar primera carta válida (no encontrada)
-        while (attempts < 16 && cards_matched[temp1]) begin
-            temp1 = (temp1 + 4'd1) & 4'hF;  // Módulo 16
-            attempts = attempts + 1;
-        end
-        
-        random_card1 = temp1;
-    end
+    state_t state;
+    logic [3:0] candidate;
+    logic [3:0] attempts;
     
-    // Validar y ajustar random_card2 (diferente de card1)
-    always_comb begin
-        automatic logic [3:0] temp2;
-        automatic int attempts;
-        
-        temp2 = lfsr2_raw;
-        attempts = 0;
-        
-        // Buscar segunda carta válida (no encontrada y diferente de card1)
-        while (attempts < 16 && (cards_matched[temp2] || temp2 == random_card1)) begin
-            temp2 = (temp2 + 4'd1) & 4'hF;  // Módulo 16
-            attempts = attempts + 1;
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            state <= IDLE;
+            random_card1 <= 4'h0;
+            random_card2 <= 4'h1;
+            random_ready <= 1'b0;
+            candidate <= 4'h0;
+            attempts <= 4'h0;
+        end else begin
+            case (state)
+                IDLE: begin
+                    random_ready <= 1'b0;
+                    if (request_random) begin
+                        candidate <= lfsr1[3:0];
+                        attempts <= 4'h0;
+                        state <= FIND_CARD1;
+                    end
+                end
+                
+                FIND_CARD1: begin
+                    if (!cards_matched[candidate] || attempts >= 4'd15) begin
+                        random_card1 <= candidate;
+                        candidate <= lfsr2[7:4];
+                        attempts <= 4'h0;
+                        state <= FIND_CARD2;
+                    end else begin
+                        candidate <= candidate + 4'd1;
+                        attempts <= attempts + 4'd1;
+                    end
+                end
+                
+                FIND_CARD2: begin
+                    if ((!cards_matched[candidate] && candidate != random_card1) || attempts >= 4'd15) begin
+                        random_card2 <= candidate;
+                        state <= DONE;
+                    end else begin
+                        candidate <= candidate + 4'd1;
+                        attempts <= attempts + 4'd1;
+                    end
+                end
+                
+                DONE: begin
+                    random_ready <= 1'b1;
+                    state <= IDLE;
+                end
+            endcase
         end
-        
-        random_card2 = temp2;
     end
 endmodule

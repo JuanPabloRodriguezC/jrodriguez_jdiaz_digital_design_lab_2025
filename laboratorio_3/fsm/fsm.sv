@@ -7,12 +7,14 @@ module fsm(
     input  logic       game_over,
     input  logic [3:0] carta1_pos,
     input  logic [3:0] carta2_pos,
+    input  logic       random_ready,
     
     output logic        enable_score,
     output logic        mark_match,
     output logic [1:0]  selector_carta,
     output logic        timer_reset,
     output logic        timer_enable,
+    output logic        request_random,
     output logic        use_random,
     output logic        turno,
     output logic [15:0] cards_face_up
@@ -177,7 +179,12 @@ module fsm(
             end
 
             S5_RANDOM_SELECT: begin
-                use_random = 1'b1;
+                if (!random_ready)
+                    request_random = 1'b1;
+                else begin
+                    use_random = 1'b1;
+                    next_state = S3_CHECK_MATCH;
+                end
             end
             
             S7_SHOW_MISMATCH: begin

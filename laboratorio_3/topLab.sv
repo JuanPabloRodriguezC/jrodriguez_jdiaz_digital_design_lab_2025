@@ -26,7 +26,7 @@ module topLab(
   logic       mark_match, clear_selection;
   logic [1:0] selector_carta;
   logic       timer_reset, timer_enable;
-  logic       use_random;
+  logic       request_random, random_ready, use_random;
   
   // Señales de status hacia la FSM
   logic       cards_match;
@@ -119,9 +119,11 @@ module topLab(
   randomGenerator u_random(
     .clk         (clk),
     .rst         (rst_fsm),
+    .request_random(request_random),
     .cards_matched(cards_matched),
     .random_card1(random_card1),
-    .random_card2(random_card2)
+    .random_card2(random_card2),
+    .random_ready(random_ready)
   );
   
   // ===== 5) Controlador de Cursor =====
@@ -190,12 +192,14 @@ module topLab(
     .game_over        (game_over),
     .carta1_pos       (carta1_pos),
     .carta2_pos       (carta2_pos),
+    .random_ready     (random_ready),
     
     .enable_score     (enable_score),
     .mark_match       (mark_match),
     .selector_carta   (selector_carta),
     .timer_reset      (timer_reset),
     .timer_enable     (timer_enable),
+    .request_random   (request_random),
     .use_random       (use_random),
     .turno            (turno),
     .cards_face_up    (cards_face_up)
