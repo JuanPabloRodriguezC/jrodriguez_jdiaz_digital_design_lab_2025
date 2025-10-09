@@ -6,7 +6,6 @@ module randomGenerator(
     output logic [3:0] random_card1,  // Valor 0-15
     output logic [3:0] random_card2   // Valor 0-15
 );
-
     // LFSR de 16 bits para mayor período
     // Polinomio: x^16 + x^15 + x^13 + x^4 + 1
     logic [15:0] lfsr1, lfsr2;
@@ -44,5 +43,4 @@ module randomGenerator(
     // Usar bits intermedios para mejor distribución
     assign random_card1 = lfsr1[7:4];
     assign random_card2 = lfsr2[11:8];
-
 endmodule

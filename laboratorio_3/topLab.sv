@@ -1,16 +1,16 @@
 module topLab(
   // Clock y Reset
-  input  logic        clk,          // clock de placa (50 MHz)
-  input  logic        rst_n,        // reset activo en bajo
+  input  logic        clk,
+  input  logic        rst_n,
 
   // Botones para control de cursor (KEY[3:0])
-  input  logic [3:0]  KEY,          // KEY[0]=select, KEY[1]=right, KEY[2]=left, KEY[3]=down
-  input  logic [1:0]  SW,           // SW[0]=up, SW[1]=rst para FSM
+  input  logic [3:0]  KEY,
+  input  logic [1:0]  SW,
   
   // VGA Outputs
   output logic        VGA_HS,
   output logic        VGA_VS,
-  output logic        VGA_CLK,       // Reloj VGA para el DAC
+  output logic        VGA_CLK,
   output logic        VGA_BLANK_N,
   output logic        VGA_SYNC_N,
   output logic [7:0]  VGA_R,
@@ -18,19 +18,20 @@ module topLab(
   output logic [7:0]  VGA_B,
   
   // 7-Segment Displays
-  output logic [6:0]  HEX0,         // Unidades timer
-  output logic [6:0]  HEX1,         // Decenas timer
-  output logic [6:0]  HEX2,         // Puntaje jugador 1
-  output logic [6:0]  HEX3,         // Puntaje jugador 2
+  output logic [6:0]  HEX0,
+  output logic [6:0]  HEX1,
+  output logic [6:0]  HEX2,
+  output logic [6:0]  HEX3,
   
   // Debug outputs
-  output logic [3:0]  LEDR          // Ver posición del cursor en LEDs
+  output logic [3:0]  LEDR
 );
 
   // ===== Señales internas =====
   logic [3:0] cursor_position;
   logic       carta_recibida;
   logic [3:0] carta1_id, carta2_id;
+  logic [3:0] random_card1, random_card2;
   
   // FSM señales
   logic       selector_carta;
@@ -40,7 +41,7 @@ module topLab(
   logic [3:0] puntaje1;
   logic [3:0] puntaje2;
   logic       sig_carta_aleatoria;
-  logic [15:0] cards_face_up;  // Estado de cartas volteadas
+  logic [15:0] cards_face_up;
   
   // VGA señales
   logic [9:0] x, y;
@@ -49,7 +50,7 @@ module topLab(
   // Timer señales
   logic       timer_timeout_internal;
   
-  // Botones procesados (activos en bajo en la placa)
+  // Botones procesados
   logic btn_select, btn_right, btn_left, btn_down, btn_up;
   logic rst_fsm;
 
@@ -63,17 +64,15 @@ module topLab(
   // Asignaciones VGA
   assign VGA_HS = hsync;
   assign VGA_VS = vsync;
-  assign VGA_CLK = vga_clk;          // Reloj para el DAC VGA
+  assign VGA_CLK = vga_clk;
   assign VGA_BLANK_N = vga_blank_n;
   assign VGA_SYNC_N = vga_sync_n;
   assign VGA_R = vga_r;
   assign VGA_G = vga_g;
   assign VGA_B = vga_b;
   
-  // Debug: mostrar posición del cursor
   assign LEDR = cursor_position;
   
-  // ===== Señales VGA internas =====
   logic hsync, vsync, vga_blank_n, vga_sync_n;
   logic [7:0] vga_r, vga_g, vga_b;
 
@@ -89,7 +88,7 @@ module topLab(
   
   // ===== 2) VGA Controller =====
   vgaController u_ctrl(
-    .vgaclk (vga_clk),      // Usar el reloj generado
+    .vgaclk (vga_clk),
     .rst    (~rst_n),
     .hsync  (hsync),
     .vsync  (vsync),
@@ -111,7 +110,15 @@ module topLab(
     .segments_tens  (HEX1)
   );
   
-  // ===== 4) Controlador de Cursor =====
+  // ===== 4) Generador Aleatorio =====
+  randomGenerator u_random(
+    .clk         (clk),
+    .rst         (rst_fsm),
+    .random_card1(random_card1),
+    .random_card2(random_card2)
+  );
+  
+  // ===== 5) Controlador de Cursor =====
   cursorController u_cursor(
     .clk           (clk),
     .rst           (rst_fsm),
@@ -127,7 +134,7 @@ module topLab(
     .carta2_id     (carta2_id)
   );
   
-  // ===== 5) FSM del juego =====
+  // ===== 6) FSM del juego =====
   fsm u_fsm(
     .clk                 (clk),
     .rst                 (rst_fsm),
@@ -135,6 +142,8 @@ module topLab(
     .timer_timeout       (timer_timeout_internal),
     .carta1_reg          (carta1_id),
     .carta2_reg          (carta2_id),
+    .random_card1        (random_card1),
+    .random_card2        (random_card2),
     
     .turno               (turno),
     .selector_carta      (selector_carta),
@@ -142,20 +151,22 @@ module topLab(
     .timer_enable        (timer_enable),
     .puntaje1_reg        (puntaje1),
     .puntaje2_reg        (puntaje2),
-    .sig_carta_aleatoria (sig_carta_aleatoria)
+    .sig_carta_aleatoria (sig_carta_aleatoria),
+    .cards_face_up       (cards_face_up)
   );
   
-  // ===== 6) Video Generation con Cursor =====
+  // ===== 7) Video Generation con Cursor =====
   videoGen u_vid(
-    .x         (x),
-    .y         (y),
-    .cursor_pos(cursor_position),
-    .r         (vga_r),
-    .g         (vga_g),
-    .b         (vga_b)
+    .x            (x),
+    .y            (y),
+    .cursor_pos   (cursor_position),
+    .cards_face_up(cards_face_up),
+    .r            (vga_r),
+    .g            (vga_g),
+    .b            (vga_b)
   );
   
-  // ===== 7) Displays de puntaje (conversión BCD a 7 segmentos) =====
+  // ===== 8) Displays de puntaje =====
   bcd_to_7seg u_p1_display(
     .bcd(puntaje1),
     .segments(HEX2)
@@ -175,17 +186,17 @@ module bcd_to_7seg(
 );
   always_comb begin
     case (bcd)
-      4'h0: segments = 7'b1000000; // 0
-      4'h1: segments = 7'b1111001; // 1
-      4'h2: segments = 7'b0100100; // 2
-      4'h3: segments = 7'b0110000; // 3
-      4'h4: segments = 7'b0011001; // 4
-      4'h5: segments = 7'b0010010; // 5
-      4'h6: segments = 7'b0000010; // 6
-      4'h7: segments = 7'b1111000; // 7
-      4'h8: segments = 7'b0000000; // 8
-      4'h9: segments = 7'b0010000; // 9
-      default: segments = 7'b1111111; // Apagado
+      4'h0: segments = 7'b1000000;
+      4'h1: segments = 7'b1111001;
+      4'h2: segments = 7'b0100100;
+      4'h3: segments = 7'b0110000;
+      4'h4: segments = 7'b0011001;
+      4'h5: segments = 7'b0010010;
+      4'h6: segments = 7'b0000010;
+      4'h7: segments = 7'b1111000;
+      4'h8: segments = 7'b0000000;
+      4'h9: segments = 7'b0010000;
+      default: segments = 7'b1111111;
     endcase
   end
 endmodule
