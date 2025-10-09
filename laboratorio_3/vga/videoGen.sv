@@ -1,10 +1,13 @@
 // videoGen.sv — Genera cartas de memoria con cursor
 // Las cartas están volteadas (blancas) por defecto
+// Muestra símbolo basado en el VALOR de la carta, no su posición
+// El borde del fondo indica el turno actual
 module videoGen(
   input  logic [9:0]  x,
   input  logic [9:0]  y,
   input  logic [3:0]  cursor_pos,
-  input  logic [15:0] cards_face_up,  // Bit en 1 = carta boca arriba (mostrar símbolo)
+  input  logic [15:0] cards_face_up,  // Bit en 1 = carta boca arriba
+  input  logic        turno,          // 0=Jugador1, 1=Jugador2
   output logic [7:0]  r,
   output logic [7:0]  g,
   output logic [7:0]  b
@@ -17,7 +20,21 @@ module videoGen(
   logic [3:0] current_card;
   logic [2:0] symbol_id;
   logic symbol_pixel;
-  logic is_face_up;  // Indica si la carta actual está boca arriba
+  logic is_face_up;
+  
+  // Tabla de valores de cartas (debe coincidir con FSM)
+  logic [2:0] card_values [0:15];
+  
+  initial begin
+    card_values[0]  = 3'd0;  card_values[1]  = 3'd0;
+    card_values[2]  = 3'd1;  card_values[3]  = 3'd1;
+    card_values[4]  = 3'd2;  card_values[5]  = 3'd2;
+    card_values[6]  = 3'd3;  card_values[7]  = 3'd3;
+    card_values[8]  = 3'd4;  card_values[9]  = 3'd4;
+    card_values[10] = 3'd5;  card_values[11] = 3'd5;
+    card_values[12] = 3'd6;  card_values[13] = 3'd6;
+    card_values[14] = 3'd7;  card_values[15] = 3'd7;
+  end
   
   genvar i, j;
   generate
@@ -45,7 +62,7 @@ module videoGen(
     end
   endgenerate
   
-  // Determinar carta actual
+  // Determinar carta actual y su valor
   always_comb begin
     current_card = 4'd0;
     card_x = 10'd0;
@@ -59,7 +76,8 @@ module videoGen(
       end
     end
     
-    symbol_id = current_card[3:1];
+    // Usar el valor de la carta, no su posición
+    symbol_id = card_values[current_card];
     is_face_up = cards_face_up[current_card];
   end
   
@@ -116,18 +134,18 @@ module videoGen(
         end else if (is_face_up && symbol_pixel) begin
           // Mostrar símbolo solo si está boca arriba
           case (symbol_id)
-            3'd0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end
-            3'd1: begin r = 8'h00; g = 8'h00; b = 8'hFF; end
-            3'd2: begin r = 8'h00; g = 8'hFF; b = 8'h00; end
-            3'd3: begin r = 8'hFF; g = 8'hFF; b = 8'h00; end
-            3'd4: begin r = 8'hFF; g = 8'h00; b = 8'hFF; end
-            3'd5: begin r = 8'h00; g = 8'hFF; b = 8'hFF; end
-            3'd6: begin r = 8'hFF; g = 8'hA5; b = 8'h00; end
-            3'd7: begin r = 8'h80; g = 8'h00; b = 8'h80; end
+            3'd0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Rojo
+            3'd1: begin r = 8'h00; g = 8'h00; b = 8'hFF; end // Azul
+            3'd2: begin r = 8'h00; g = 8'hFF; b = 8'h00; end // Verde
+            3'd3: begin r = 8'hFF; g = 8'hFF; b = 8'h00; end // Amarillo
+            3'd4: begin r = 8'hFF; g = 8'h00; b = 8'hFF; end // Magenta
+            3'd5: begin r = 8'h00; g = 8'hFF; b = 8'hFF; end // Cian
+            3'd6: begin r = 8'hFF; g = 8'hA5; b = 8'h00; end // Naranja
+            3'd7: begin r = 8'h80; g = 8'h00; b = 8'h80; end // Púrpura
             default: begin r = 8'hFF; g = 8'hFF; b = 8'hFF; end
           endcase
         end else begin
-          // Fondo blanco (carta boca abajo o boca arriba sin símbolo)
+          // Fondo blanco (carta boca abajo)
           r = 8'hFF; g = 8'hFF; b = 8'hFF;
         end
       end else begin
