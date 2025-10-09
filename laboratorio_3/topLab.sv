@@ -42,6 +42,7 @@ module topLab(
   logic [3:0] puntaje2;
   logic       sig_carta_aleatoria;
   logic [15:0] cards_face_up;
+  logic [15:0] cards_matched;  // Nueva señal
   
   // VGA señales
   logic [9:0] x, y;
@@ -128,6 +129,7 @@ module topLab(
     .btn_right     (btn_right),
     .btn_select    (btn_select),
     .selector_carta(selector_carta),
+    .cards_matched (cards_face_up),  // Usar cards_face_up como proxy de matched
     .cursor_pos    (cursor_position),
     .carta_recibida(carta_recibida),
     .carta1_id     (carta1_id),
@@ -161,6 +163,7 @@ module topLab(
     .y            (y),
     .cursor_pos   (cursor_position),
     .cards_face_up(cards_face_up),
+    .turno        (turno),
     .r            (vga_r),
     .g            (vga_g),
     .b            (vga_b)
