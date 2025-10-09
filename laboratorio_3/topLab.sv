@@ -24,7 +24,7 @@ module topLab(
   // Señales de control de la FSM
   logic       enable_score;
   logic       mark_match, clear_selection;
-  logic       selector_carta;
+  logic [1:0] selector_carta;
   logic       timer_reset, timer_enable;
   logic       use_random;
   
