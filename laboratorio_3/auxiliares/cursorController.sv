@@ -83,10 +83,11 @@ module cursorController(
             carta_recibida <= 1'b0;
             
             if (btn_select_edge && !cards_matched[cursor_reg]) begin
-                if (selector_carta == 2'01) begin
+                if (selector_carta == 2'b01) begin
                     // Seleccionando primera carta
                     carta_recibida <= 1'b1;
-                end else if (selector_carta == 2b'10) begin
+                end 
+					 else if (selector_carta == 2'b10) begin
                     // Seleccionando segunda carta - validar que sea diferente
                     if (cursor_reg != carta1_saved)
                         carta_recibida <= 1'b1;

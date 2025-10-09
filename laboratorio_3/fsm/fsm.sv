@@ -143,7 +143,7 @@ module fsm(
         timer_reset = 1'b1;
         timer_enable = 1'b0;
         use_random = 1'b0;
-        cards_face_up = 16'h0000;  // ✅ Cards face down by default
+        cards_face_up = 16'h0000;
 
         case (state)
             S0_SHOW_CARDS: begin

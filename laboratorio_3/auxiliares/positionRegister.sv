@@ -30,7 +30,7 @@ module positionRegister(
                 // Cargar posiciones del cursor
                 if ((selector_carta == 2'b01))
                     carta1_pos <= cursor_pos;
-                if (l(selector_carta == 2'b10))
+                if ((selector_carta == 2'b10))
                     carta2_pos <= cursor_pos;
             end
         end
