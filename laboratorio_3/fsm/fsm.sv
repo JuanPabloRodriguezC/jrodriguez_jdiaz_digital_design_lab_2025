@@ -1,229 +1,202 @@
 module fsm(
-    // Inputs
     input  logic       clk,
     input  logic       rst,
-    input  logic       carta_recibida,     
+    input  logic       carta_recibida,
     input  logic       timer_timeout,
-    input  logic [3:0] carta1_reg,
-    input  logic [3:0] carta2_reg,
-    input  logic [3:0] random_card1,
-    input  logic [3:0] random_card2,
+    input  logic       cards_match,
+    input  logic       game_over,
+    input  logic [3:0] carta1_pos,
+    input  logic [3:0] carta2_pos,
+    input  logic       random_ready,
     
-    // Outputs
-    output logic        turno,
-    output logic        selector_carta,
+    output logic        enable_score,
+    output logic        mark_match,
+    output logic [1:0]  selector_carta,
     output logic        timer_reset,
     output logic        timer_enable,
-    output logic [3:0]  puntaje1_reg,
-    output logic [3:0]  puntaje2_reg,
-    output logic        sig_carta_aleatoria,
+    output logic        request_random,
+    output logic        use_random,
+    output logic        turno,
     output logic [15:0] cards_face_up
-);    
+);
 
-    // --- STATE ENCODING ---
     typedef enum logic [2:0] {
-        S0_WAIT_CARD1    = 3'b000,
-        S1_WAIT_CARD2    = 3'b001,
-        S2_CHECK_MATCH   = 3'b010,
-        S3_PLAYER_SCORED = 3'b011,
-        S4_RANDOM_SELECT = 3'b100,
-        S5_SHOW_CARDS    = 3'b101,
-        S6_GAME_OVER     = 3'b110
+        S0_SHOW_CARDS    = 3'b000,
+        S1_WAIT_CARD1    = 3'b001,
+        S2_WAIT_CARD2    = 3'b010,
+        S3_CHECK_MATCH   = 3'b011,
+        S4_PLAYER_SCORED = 3'b100,
+        S5_RANDOM_SELECT = 3'b101,
+        S6_GAME_OVER     = 3'b110,
+        S7_SHOW_MISMATCH = 3'b111
     } state_t;
     
-    state_t state, next_state;
+    (* syn_encoding = "one-hot" *) state_t state, next_state;
     
-    // --- INTERNAL REGISTERS ---
-    logic [4:0]  cartas_disponibles_reg;
-    logic        cards_match;
-    logic [15:0] cards_matched;        // Cartas ya encontradas (permanentemente volteadas)
     logic [25:0] delay_counter;
-    logic [3:0]  carta1_pos, carta2_pos;  // Posiciones de las cartas seleccionadas
+    logic delay_done;
+    logic turno_reg;
     
-    // Tabla de valores de cartas (8 pares: 0,0,1,1,2,2...7,7)
-    // Cada posición tiene un valor de símbolo
-    logic [2:0] card_values [0:15];
+    localparam DELAY_SHOW_CARDS = 26'd150_000_000;  // 3 seconds
+    localparam DELAY_MISMATCH = 26'd50_000_000;     // 1 second
     
-    initial begin
-        card_values[0]  = 3'd0;  card_values[1]  = 3'd0;
-        card_values[2]  = 3'd1;  card_values[3]  = 3'd1;
-        card_values[4]  = 3'd2;  card_values[5]  = 3'd2;
-        card_values[6]  = 3'd3;  card_values[7]  = 3'd3;
-        card_values[8]  = 3'd4;  card_values[9]  = 3'd4;
-        card_values[10] = 3'd5;  card_values[11] = 3'd5;
-        card_values[12] = 3'd6;  card_values[13] = 3'd6;
-        card_values[14] = 3'd7;  card_values[15] = 3'd7;
-    end
-    
-    localparam DELAY_CYCLES = 26'd50_000_000;  // 1 segundo @ 50MHz
+    assign turno = turno_reg;
 
-    assign sig_carta_aleatoria = (state == S4_RANDOM_SELECT);
-    
-    // Comparar VALORES de las cartas, no sus posiciones
-    assign cards_match = (card_values[carta1_pos] == card_values[carta2_pos]) && 
-                        (carta1_pos != carta2_pos);  // No puede ser la misma carta
-
-    // --- DISPLAY LOGIC ---
-    always_comb begin
-        cards_face_up = cards_matched;  // Base: solo cartas ya encontradas
-
-        case (state)
-            S1_WAIT_CARD2: cards_face_up[carta1_pos] = 1'b1;
-            S2_CHECK_MATCH,
-            S3_PLAYER_SCORED,
-            S5_SHOW_CARDS: begin
-                cards_face_up[carta1_pos] = 1'b1;
-                cards_face_up[carta2_pos] = 1'b1;
-            end
-            default: ;
-        endcase
-    end
-
-    // --- STATE REGISTER + DELAY COUNTER ---
+    // ===== Estado y contador =====
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            state <= S0_WAIT_CARD1;
+            state <= S0_SHOW_CARDS;
             delay_counter <= 26'd0;
         end else begin
             state <= next_state;
-
-            if (state == S5_SHOW_CARDS) begin
-                if (delay_counter < DELAY_CYCLES)
-                    delay_counter <= delay_counter + 1;
-            end else begin
+            
+            // Contador de delay
+            if (state == S0_SHOW_CARDS && delay_counter < DELAY_SHOW_CARDS)
+                delay_counter <= delay_counter + 1;
+            else if (state == S7_SHOW_MISMATCH && delay_counter < DELAY_MISMATCH)
+                delay_counter <= delay_counter + 1;
+            else
                 delay_counter <= 26'd0;
-            end
+        end
+    end
+    
+    // Determinar si el delay terminó
+    always_comb begin
+        if (state == S0_SHOW_CARDS)
+            delay_done = (delay_counter >= DELAY_SHOW_CARDS);
+        else if (state == S7_SHOW_MISMATCH)
+            delay_done = (delay_counter >= DELAY_MISMATCH);
+        else
+            delay_done = 1'b0;
+    end
+
+    // ===== Registro de turno =====
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            turno_reg <= 1'b0;
+        end else begin
+            // Cambiar turno al salir de SHOW_MISMATCH
+            if (state == S7_SHOW_MISMATCH && next_state == S1_WAIT_CARD1)
+                turno_reg <= ~turno_reg;
         end
     end
 
-    // --- NEXT STATE LOGIC ---
+    // ===== Lógica de próximo estado =====
     always_comb begin
         next_state = state;
 
         case (state)
-            S0_WAIT_CARD1: begin
+            S0_SHOW_CARDS: begin
+                if (delay_done)
+                    next_state = S1_WAIT_CARD1;
+            end
+
+            S1_WAIT_CARD1: begin
                 if (timer_timeout)
-                    next_state = S4_RANDOM_SELECT;
+                    next_state = S5_RANDOM_SELECT;
                 else if (carta_recibida)
-                    next_state = S1_WAIT_CARD2;
+                    next_state = S2_WAIT_CARD2;
             end
             
-            S1_WAIT_CARD2: begin
+            S2_WAIT_CARD2: begin
                 if (timer_timeout)
-                    next_state = S4_RANDOM_SELECT;
+                    next_state = S5_RANDOM_SELECT;
                 else if (carta_recibida)
-                    next_state = S2_CHECK_MATCH;
+                    next_state = S3_CHECK_MATCH;
             end
             
-            S2_CHECK_MATCH: begin
-                next_state = S5_SHOW_CARDS;
+            S3_CHECK_MATCH: begin
+                if (cards_match)
+                    next_state = S4_PLAYER_SCORED;
+                else
+                    next_state = S7_SHOW_MISMATCH;
             end
             
-            S5_SHOW_CARDS: begin
-                if (delay_counter >= DELAY_CYCLES) begin
-                    if (cards_match)
-                        next_state = S3_PLAYER_SCORED;
-                    else
-                        next_state = S0_WAIT_CARD1;
-                end
-            end
-            
-            S3_PLAYER_SCORED: begin
-                if (cartas_disponibles_reg <= 2)
+            S4_PLAYER_SCORED: begin
+                if (game_over)
                     next_state = S6_GAME_OVER;
                 else
-                    next_state = S0_WAIT_CARD1;
+                    next_state = S1_WAIT_CARD1;
             end
             
-            S4_RANDOM_SELECT: begin
-                next_state = S2_CHECK_MATCH;
+            S5_RANDOM_SELECT: begin
+                if (random_ready)
+                    next_state = S3_CHECK_MATCH;
             end
             
-            S6_GAME_OVER: next_state = S6_GAME_OVER;
+            S7_SHOW_MISMATCH: begin
+                if (delay_done)
+                    next_state = S1_WAIT_CARD1;
+            end
+     
+            S6_GAME_OVER: begin
+                next_state = S6_GAME_OVER;
+            end
 
-            default: next_state = S0_WAIT_CARD1;
+            default: next_state = S1_WAIT_CARD1;
         endcase
     end
 
-    // --- OUTPUT & SCORE LOGIC ---
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            puntaje1_reg <= 4'h0;
-            puntaje2_reg <= 4'h0;
-            turno <= 1'b0;
-            cartas_disponibles_reg <= 5'd16;
-            selector_carta <= 1'b0;
-            cards_matched <= 16'h0000;
-            carta1_pos <= 4'h0;
-            carta2_pos <= 4'h0;
-        end else begin
-            case (state)
-                S0_WAIT_CARD1: begin
-                    selector_carta <= 1'b0;
-                    // Capturar carta1 del usuario
-                    if (carta_recibida && !cards_matched[carta1_reg])
-                        carta1_pos <= carta1_reg;
-                end
-                
-                S1_WAIT_CARD2: begin
-                    selector_carta <= 1'b1;
-                    // Capturar carta2 del usuario
-                    if (carta_recibida && !cards_matched[carta2_reg] && carta2_reg != carta1_pos)
-                        carta2_pos <= carta2_reg;
-                end
-                
-                S4_RANDOM_SELECT: begin
-                    // Selección aleatoria por timeout
-                    if (selector_carta == 1'b0) begin
-                        // Timeout en espera de carta1 - seleccionar ambas
-                        carta1_pos <= random_card1;
-                        carta2_pos <= random_card2;
-                    end else begin
-                        // Timeout en espera de carta2 - solo seleccionar carta2
-                        // carta1_pos ya está seleccionada
-                        carta2_pos <= random_card1;
-                    end
-                end
-                
-                S5_SHOW_CARDS: begin
-                    // Cambiar turno solo si no hay match
-                    if (delay_counter >= DELAY_CYCLES && !cards_match)
-                        turno <= ~turno;
-                end
-                
-                S3_PLAYER_SCORED: begin
-                    if (turno == 1'b0)
-                        puntaje1_reg <= puntaje1_reg + 4'h1;
-                    else
-                        puntaje2_reg <= puntaje2_reg + 4'h1;
-
-                    cartas_disponibles_reg <= cartas_disponibles_reg - 5'd2;
-                    
-                    // Marcar las cartas como encontradas (permanentemente volteadas)
-                    cards_matched[carta1_pos] <= 1'b1;
-                    cards_matched[carta2_pos] <= 1'b1;
-                end
-                
-                default: ;
-            endcase
-        end
-    end
-
-    // --- TIMER CONTROL ---
+    // ===== Señales de control =====
     always_comb begin
+        // Defaults
+        enable_score = 1'b0;
+        mark_match = 1'b0;
+        selector_carta = 2'b00;
+        timer_reset = 1'b1;
         timer_enable = 1'b0;
-        timer_reset  = 1'b1;
+        use_random = 1'b0;
+        cards_face_up = 16'h0000;
 
         case (state)
-            S0_WAIT_CARD1,
-            S1_WAIT_CARD2: begin
+            S0_SHOW_CARDS: begin
+                cards_face_up = 16'hFFFF;  // Show all cards
+                selector_carta = 2'b00;
+            end
+
+            S1_WAIT_CARD1: begin
+                selector_carta = 2'b01;
+                timer_reset = 1'b0;
                 timer_enable = 1'b1;
-                timer_reset  = 1'b0;
             end
-            default: begin
-                timer_enable = 1'b0;
-                timer_reset  = 1'b1;
+            
+            S2_WAIT_CARD2: begin
+                selector_carta = 2'b10;
+                timer_reset = 1'b0;
+                timer_enable = 1'b1;
+                cards_face_up[carta1_pos] = 1'b1;  // Show first card only
             end
+            
+            S3_CHECK_MATCH: begin
+                cards_face_up[carta1_pos] = 1'b1;
+                cards_face_up[carta2_pos] = 1'b1;
+            end
+
+            S4_PLAYER_SCORED: begin
+                mark_match = 1'b1;
+                enable_score = 1'b1;
+                cards_face_up[carta1_pos] = 1'b1;
+                cards_face_up[carta2_pos] = 1'b1;
+            end
+
+            S5_RANDOM_SELECT: begin
+                request_random = 1'b1;
+                if (random_ready)
+                    use_random = 1'b1;
+
+            end
+            
+            S7_SHOW_MISMATCH: begin
+                // Show mismatched cards briefly
+                cards_face_up[carta1_pos] = 1'b1;
+                cards_face_up[carta2_pos] = 1'b1;
+            end
+            
+            S6_GAME_OVER: begin
+                // Could show all matched cards
+            end
+            
+            default: ;
         endcase
     end
 
