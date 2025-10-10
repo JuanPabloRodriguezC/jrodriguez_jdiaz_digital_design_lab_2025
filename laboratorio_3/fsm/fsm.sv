@@ -21,6 +21,8 @@ module fsm(
     output logic [15:0] cards_face_up
 );
 
+// definicion de estados
+
     typedef enum logic [2:0] {
         S0_WAIT_CARD1    = 3'b000,
         S1_WAIT_CARD2    = 3'b001,
@@ -30,13 +32,16 @@ module fsm(
         S5_SHOW_CARDS    = 3'b101,
         S6_GAME_OVER     = 3'b110
     } state_t;
+	 
+	 
+	 // logica secuencial para asignar estados
     
     (* syn_encoding = "sequential" *) state_t state;
     state_t next_state;
     
-    logic [25:0] delay_counter;
-    logic delay_done;
-    logic turno_reg;
+    logic [25:0] delay_counter; // para que las cartas se esperen al ser mostradas
+    logic delay_done; // cuando termina el delay
+    logic turno_reg; // registro del turno
     
     localparam DELAY_CYCLES = 26'd50_000_000;
     
@@ -49,6 +54,8 @@ module fsm(
         else
             state <= next_state;
     end
+	 
+	 // asigna delay durante el S5 Show cards
 
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -69,6 +76,8 @@ module fsm(
                 turno_reg <= ~turno_reg;
         end
     end
+	 
+	 // next state logic
 
     always_comb begin
         next_state = state;
@@ -79,6 +88,7 @@ module fsm(
                     next_state = S4_RANDOM_SELECT;
                 else if (carta_recibida)
                     next_state = S1_WAIT_CARD2;
+						  else next_state = S0_WAIT_CARD1;
             end
             
             S1_WAIT_CARD2: begin
@@ -86,20 +96,23 @@ module fsm(
                     next_state = S4_RANDOM_SELECT;
                 else if (carta_recibida)
                     next_state = S2_CHECK_MATCH;
+						  else next_state = S1_WAIT_CARD2;
             end
             
             S2_CHECK_MATCH: begin
                 next_state = S5_SHOW_CARDS;
             end
             
-            S5_SHOW_CARDS: begin
-                if (delay_done) begin
-                    if (cards_match)
-                        next_state = S3_PLAYER_SCORED;
-                    else
-                        next_state = S0_WAIT_CARD1;
-                end
-            end
+				S5_SHOW_CARDS: begin
+					 if (delay_done) begin
+						  if (cards_match)
+								next_state = S3_PLAYER_SCORED;
+						  else
+								next_state = S0_WAIT_CARD1;
+					 end else begin
+						  next_state = S5_SHOW_CARDS;
+					 end
+				end
             
             S3_PLAYER_SCORED: begin
                 if (game_over)
@@ -117,6 +130,8 @@ module fsm(
             default: next_state = S0_WAIT_CARD1;
         endcase
     end
+	 
+	 // assign señales - logica de salida
 
     always_comb begin
         enable_score1 = 1'b0;
@@ -168,6 +183,10 @@ module fsm(
             end
             
             S6_GAME_OVER: begin
+				
+						timer_reset = 1'b0;
+						timer_enable = 1'b0;
+				
             end
             
             default: ;

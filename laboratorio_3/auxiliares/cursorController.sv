@@ -13,7 +13,7 @@ module cursorController(
     output logic       carta_recibida
 );
     logic [3:0] cursor_reg;
-    logic [3:0] carta1_saved;  // Guardar primera carta seleccionada
+    logic [3:0] carta1_saved;
     logic [4:0] btn_prev;
     logic btn_up_edge, btn_down_edge, btn_left_edge, btn_right_edge, btn_select_edge;
     logic [19:0] debounce_counter;
@@ -65,7 +65,6 @@ module cursorController(
         end
     end
     
-    // Guardar la primera carta seleccionada
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             carta1_saved <= 4'h0;
@@ -75,7 +74,6 @@ module cursorController(
         end
     end
     
-    // Generar pulso de carta recibida con validaciones
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             carta_recibida <= 1'b0;
@@ -84,10 +82,8 @@ module cursorController(
             
             if (btn_select_edge && !cards_matched[cursor_reg]) begin
                 if (selector_carta == 1'b0) begin
-                    // Seleccionando primera carta
                     carta_recibida <= 1'b1;
                 end else begin
-                    // Seleccionando segunda carta - validar que sea diferente
                     if (cursor_reg != carta1_saved)
                         carta_recibida <= 1'b1;
                 end

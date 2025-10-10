@@ -1,16 +1,18 @@
-module randomGenerator(
+module randomGenerator( // dos generadores pseudoaleatorios basados en LFSR (Linear Feedback Shift Register)
     input  logic       clk,
     input  logic       rst,
     input  logic [15:0] cards_matched,
     output logic [3:0] random_card1,
     output logic [3:0] random_card2
 );
-    logic [15:0] lfsr1, lfsr2;
+    logic [15:0] lfsr1, lfsr2; // reg 16 bits para generar la secuencia
     logic feedback1, feedback2;
     logic [3:0] lfsr1_raw, lfsr2_raw;
     
-    assign feedback1 = lfsr1[15] ^ lfsr1[14] ^ lfsr1[12] ^ lfsr1[3];
+    assign feedback1 = lfsr1[15] ^ lfsr1[14] ^ lfsr1[12] ^ lfsr1[3]; // realiza XORs para formar un nuevo bit
     assign feedback2 = lfsr2[15] ^ lfsr2[13] ^ lfsr2[11] ^ lfsr2[1];
+	 
+	 // en cada pulso de reloj se actualizan los polinomios 
     
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -39,16 +41,16 @@ module randomGenerator(
         temp1 = lfsr1_raw;
         attempts = 0;
         
-        // Buscar primera carta válida (no encontrada)
-        while (attempts < 16 && cards_matched[temp1]) begin
-            temp1 = (temp1 + 4'd1) & 4'hF;  // Módulo 16
+        while (attempts < 16 && cards_matched[temp1]) begin // toma como base el lsfr de 4 bits
+		  // si ya fue emparejada, intenta con la siguiente
+            temp1 = (temp1 + 4'd1) & 4'hF;
             attempts = attempts + 1;
         end
         
         random_card1 = temp1;
     end
     
-    // Validar y ajustar random_card2 (diferente de card1)
+    // Validar y ajustar random_card2
     always_comb begin
         automatic logic [3:0] temp2;
         automatic int attempts;
@@ -56,9 +58,8 @@ module randomGenerator(
         temp2 = lfsr2_raw;
         attempts = 0;
         
-        // Buscar segunda carta válida (no encontrada y diferente de card1)
         while (attempts < 16 && (cards_matched[temp2] || temp2 == random_card1)) begin
-            temp2 = (temp2 + 4'd1) & 4'hF;  // Módulo 16
+            temp2 = (temp2 + 4'd1) & 4'hF;
             attempts = attempts + 1;
         end
         

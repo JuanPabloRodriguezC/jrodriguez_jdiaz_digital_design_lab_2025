@@ -1,7 +1,7 @@
 // videoGen.sv — Genera cartas de memoria con cursor
 // Las cartas están volteadas (blancas) por defecto
-// Muestra símbolo basado en el VALOR de la carta, no su posición
-// El borde del fondo indica el turno actual
+// Muestra símbolo basado en el valor de la carta, no su posición
+// El color del cursor cambia según el turno (Cian=P1, Amarillo=P2)
 module videoGen(
   input  logic [9:0]  x,
   input  logic [9:0]  y,
@@ -22,6 +22,9 @@ module videoGen(
   logic symbol_pixel;
   logic is_face_up;
   
+  // Colores del cursor según el turno
+  logic [7:0] cursor_r, cursor_g, cursor_b;
+  
   // Tabla de valores de cartas (debe coincidir con FSM)
   logic [2:0] card_values [0:15];
   
@@ -34,6 +37,21 @@ module videoGen(
     card_values[10] = 3'd5;  card_values[11] = 3'd5;
     card_values[12] = 3'd6;  card_values[13] = 3'd6;
     card_values[14] = 3'd7;  card_values[15] = 3'd7;
+  end
+  
+  // Asignar color del cursor según el turno
+  always_comb begin
+    if (turno == 1'b0) begin
+      // Jugador 1: Cian
+      cursor_r = 8'h00;
+      cursor_g = 8'hFF;
+      cursor_b = 8'hFF;
+    end else begin
+      // Jugador 2: Amarillo
+      cursor_r = 8'hFF;
+      cursor_g = 8'hFF;
+      cursor_b = 8'h00;
+    end
   end
   
   genvar i, j;
@@ -121,16 +139,20 @@ module videoGen(
   always_comb begin
     r = 8'h00; g = 8'h40; b = 8'h00;  // Fondo verde
     
-    // Borde del cursor
+    // Borde del cursor (fuera de la carta) - usa color según turno
     if (cursor_border[cursor_pos] && !incard[cursor_pos]) begin
-      r = 8'h00; g = 8'hFF; b = 8'hFF;
+      r = cursor_r;
+      g = cursor_g;
+      b = cursor_b;
     end
     
     if (|incard) begin
       if (current_card == cursor_pos) begin
-        // Carta con cursor - borde cian
+        // Carta con cursor - borde usa color según turno
         if (card_x < 5 || card_x >= 75 || card_y < 5 || card_y >= 55) begin
-          r = 8'h00; g = 8'hFF; b = 8'hFF;
+          r = cursor_r;
+          g = cursor_g;
+          b = cursor_b;
         end else if (is_face_up && symbol_pixel) begin
           // Mostrar símbolo solo si está boca arriba
           case (symbol_id)

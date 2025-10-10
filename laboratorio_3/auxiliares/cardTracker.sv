@@ -12,10 +12,11 @@ module cardTracker(
     
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            cards_matched <= 16'h0000;
+            cards_matched <= 16'h0000; // limpia todo 
             match_count <= 4'd0;
         end else begin
             if (mark_match && !cards_matched[carta1_pos] && !cards_matched[carta2_pos]) begin
+				// asgura que la FSM haya mandado la señal y que no sea una carta ya recibida
                 cards_matched[carta1_pos] <= 1'b1;
                 cards_matched[carta2_pos] <= 1'b1;
                 match_count <= match_count + 4'd1;
@@ -23,5 +24,5 @@ module cardTracker(
         end
     end
     
-    assign game_over = (match_count >= 4'd8);  // 8 pares encontrados
+    assign game_over = (match_count >= 4'd8);
 endmodule
