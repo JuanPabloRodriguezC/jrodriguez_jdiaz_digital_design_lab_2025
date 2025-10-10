@@ -1,5 +1,4 @@
 module fsm(
-    // Inputs (status del sistema)
     input  logic       clk,
     input  logic       rst,
     input  logic       carta_recibida,
@@ -9,7 +8,6 @@ module fsm(
     input  logic [3:0] carta1_pos,
     input  logic [3:0] carta2_pos,
     
-    // Outputs (SOLO señales de control)
     output logic        enable_score1,
     output logic        enable_score2,
     output logic        load_carta1,
@@ -23,7 +21,6 @@ module fsm(
     output logic [15:0] cards_face_up
 );
 
-    // Declarar el tipo primero
     typedef enum logic [2:0] {
         S0_WAIT_CARD1    = 3'b000,
         S1_WAIT_CARD2    = 3'b001,
@@ -34,8 +31,8 @@ module fsm(
         S6_GAME_OVER     = 3'b110
     } state_t;
     
-    // Declaración única (con atributo aplicado)
-    (* syn_encoding = "one-hot" *) state_t state, next_state;
+    (* syn_encoding = "sequential" *) state_t state;
+    state_t next_state;
     
     logic [25:0] delay_counter;
     logic delay_done;
@@ -46,7 +43,6 @@ module fsm(
     assign delay_done = (delay_counter >= DELAY_CYCLES);
     assign turno = turno_reg;
 
-    // ===== Registro de estado =====
     always_ff @(posedge clk or posedge rst) begin
         if (rst)
             state <= S0_WAIT_CARD1;
@@ -54,7 +50,6 @@ module fsm(
             state <= next_state;
     end
 
-    // ===== Contador de delay =====
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             delay_counter <= 26'd0;
@@ -66,18 +61,15 @@ module fsm(
         end
     end
 
-    // ===== Registro de turno =====
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             turno_reg <= 1'b0;
         end else begin
-            // Cambiar turno al terminar S5_SHOW_CARDS (cuando el delay acaba) y no hubo match
-            if (state == S5_SHOW_CARDS && delay_done && !cards_match)
+            if (state == S5_SHOW_CARDS && next_state == S0_WAIT_CARD1 && !cards_match)
                 turno_reg <= ~turno_reg;
         end
     end
 
-    // ===== Lógica de próximo estado =====
     always_comb begin
         next_state = state;
 
@@ -126,9 +118,7 @@ module fsm(
         endcase
     end
 
-    // ===== Señales de control (combinacionales) =====
     always_comb begin
-        // Defaults
         enable_score1 = 1'b0;
         enable_score2 = 1'b0;
         load_carta1 = 1'b0;
@@ -158,8 +148,6 @@ module fsm(
             
             S4_RANDOM_SELECT: begin
                 use_random = 1'b1;
-                // Si selector_carta es 0, seleccionar ambas cartas random
-                // Si selector_carta es 1, solo carta2 (carta1 ya está seleccionada)
             end
             
             S2_CHECK_MATCH,
@@ -180,8 +168,6 @@ module fsm(
             end
             
             S6_GAME_OVER: begin
-                // Mostrar todas las cartas encontradas
-                // (esto lo maneja cardTracker)
             end
             
             default: ;
