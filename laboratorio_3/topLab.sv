@@ -98,6 +98,9 @@ module topLab(
     .cursor_pos   (cursor_position),
     .cards_face_up(display_cards),
     .turno        (turno),
+    .game_over    (game_over),
+    .puntaje1     (puntaje1),
+    .puntaje2     (puntaje2),
     .r            (vga_r),
     .g            (vga_g),
     .b            (vga_b)
