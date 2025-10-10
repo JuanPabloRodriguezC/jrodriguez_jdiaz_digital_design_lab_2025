@@ -120,7 +120,8 @@ module fsm(
             end
             
             S5_RANDOM_SELECT: begin
-                next_state = S3_CHECK_MATCH;
+                if (random_ready)
+                    next_state = S3_CHECK_MATCH;
             end
             
             S7_SHOW_MISMATCH: begin
@@ -179,12 +180,10 @@ module fsm(
             end
 
             S5_RANDOM_SELECT: begin
-                if (!random_ready)
-                    request_random = 1'b1;
-                else begin
+                request_random = 1'b1;
+                if (random_ready)
                     use_random = 1'b1;
-                    next_state = S3_CHECK_MATCH;
-                end
+
             end
             
             S7_SHOW_MISMATCH: begin
