@@ -30,6 +30,9 @@ module fsm(
         S5_SHOW_CARDS    = 3'b101,
         S6_GAME_OVER     = 3'b110
     } state_t;
+	 
+	 
+	 // logica secuencial para asignar estados
     
     (* syn_encoding = "sequential" *) state_t state;
     state_t next_state;
@@ -69,6 +72,8 @@ module fsm(
                 turno_reg <= ~turno_reg;
         end
     end
+	 
+	 // next state logic
 
     always_comb begin
         next_state = state;
@@ -79,6 +84,7 @@ module fsm(
                     next_state = S4_RANDOM_SELECT;
                 else if (carta_recibida)
                     next_state = S1_WAIT_CARD2;
+						  else next_state = S0_WAIT_CARD1;
             end
             
             S1_WAIT_CARD2: begin
@@ -86,20 +92,23 @@ module fsm(
                     next_state = S4_RANDOM_SELECT;
                 else if (carta_recibida)
                     next_state = S2_CHECK_MATCH;
+						  else next_state = S1_WAIT_CARD2;
             end
             
             S2_CHECK_MATCH: begin
                 next_state = S5_SHOW_CARDS;
             end
             
-            S5_SHOW_CARDS: begin
-                if (delay_done) begin
-                    if (cards_match)
-                        next_state = S3_PLAYER_SCORED;
-                    else
-                        next_state = S0_WAIT_CARD1;
-                end
-            end
+				S5_SHOW_CARDS: begin
+					 if (delay_done) begin
+						  if (cards_match)
+								next_state = S3_PLAYER_SCORED;
+						  else
+								next_state = S0_WAIT_CARD1;
+					 end else begin
+						  next_state = S5_SHOW_CARDS;
+					 end
+				end
             
             S3_PLAYER_SCORED: begin
                 if (game_over)
@@ -117,6 +126,8 @@ module fsm(
             default: next_state = S0_WAIT_CARD1;
         endcase
     end
+	 
+	 // assign señales
 
     always_comb begin
         enable_score1 = 1'b0;
@@ -168,6 +179,10 @@ module fsm(
             end
             
             S6_GAME_OVER: begin
+				
+						timer_reset = 0;
+						timer_enable = 0;
+				
             end
             
             default: ;
