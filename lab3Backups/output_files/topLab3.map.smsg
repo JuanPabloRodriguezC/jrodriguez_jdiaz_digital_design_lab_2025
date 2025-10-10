@@ -1,0 +1,7 @@
+Warning (10268): Verilog HDL information at cardPositionRandomizer.sv(21): always construct contains both blocking and non-blocking assignments File: C:/Proyectos/TDD/lab3Backups/cardPositionRandomizer.sv Line: 21
+Info (10281): Verilog HDL Declaration information at topLab3.sv(9): object "VGA_CLK" differs only in case from object "vga_clk" in the same scope File: C:/Proyectos/TDD/lab3Backups/topLab3.sv Line: 9
+Info (10281): Verilog HDL Declaration information at topLab3.sv(10): object "VGA_BLANK_N" differs only in case from object "vga_blank_n" in the same scope File: C:/Proyectos/TDD/lab3Backups/topLab3.sv Line: 10
+Info (10281): Verilog HDL Declaration information at topLab3.sv(11): object "VGA_SYNC_N" differs only in case from object "vga_sync_n" in the same scope File: C:/Proyectos/TDD/lab3Backups/topLab3.sv Line: 11
+Info (10281): Verilog HDL Declaration information at topLab3.sv(12): object "VGA_R" differs only in case from object "vga_r" in the same scope File: C:/Proyectos/TDD/lab3Backups/topLab3.sv Line: 12
+Info (10281): Verilog HDL Declaration information at topLab3.sv(13): object "VGA_G" differs only in case from object "vga_g" in the same scope File: C:/Proyectos/TDD/lab3Backups/topLab3.sv Line: 13
+Info (10281): Verilog HDL Declaration information at topLab3.sv(14): object "VGA_B" differs only in case from object "vga_b" in the same scope File: C:/Proyectos/TDD/lab3Backups/topLab3.sv Line: 14
