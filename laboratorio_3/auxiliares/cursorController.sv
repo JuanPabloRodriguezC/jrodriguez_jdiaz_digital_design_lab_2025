@@ -6,7 +6,7 @@ module cursorController(
     input  logic       btn_left,
     input  logic       btn_right,
     input  logic       btn_select,
-    input  logic       selector_carta,
+    input  logic [1:0] selector_carta,
     input  logic [15:0] cards_matched,
     
     output logic [3:0] cursor_pos,
@@ -69,7 +69,7 @@ module cursorController(
         if (rst) begin
             carta1_saved <= 4'h0;
         end else begin
-            if (selector_carta == 1'b0 && btn_select_edge && !cards_matched[cursor_reg])
+            if (selector_carta == 2'b01 && btn_select_edge && !cards_matched[cursor_reg])
                 carta1_saved <= cursor_reg;
         end
     end
@@ -81,9 +81,11 @@ module cursorController(
             carta_recibida <= 1'b0;
             
             if (btn_select_edge && !cards_matched[cursor_reg]) begin
+
                 if (selector_carta == 1'b0) begin
                     carta_recibida <= 1'b1;
                 end else begin
+
                     if (cursor_reg != carta1_saved)
                         carta_recibida <= 1'b1;
                 end

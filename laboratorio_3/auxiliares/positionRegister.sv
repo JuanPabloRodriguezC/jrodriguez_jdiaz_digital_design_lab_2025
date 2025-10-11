@@ -1,10 +1,10 @@
 module positionRegister(
     input  logic       clk,
     input  logic       rst,
-    input  logic       load_carta1,
-    input  logic       load_carta2,
     input  logic       use_random,
+
     input  logic       selector_carta,
+
     input  logic [3:0] cursor_pos,
     input  logic [3:0] random_card1,
     input  logic [3:0] random_card2,
@@ -18,6 +18,7 @@ module positionRegister(
             carta2_pos <= 4'h0;
         end else begin
             if (use_random) begin
+
                 if (selector_carta == 1'b0) begin
                     carta1_pos <= random_card1;
                     carta2_pos <= random_card2;
@@ -26,8 +27,9 @@ module positionRegister(
                 end
             end else begin
                 if (load_carta1)
+
                     carta1_pos <= cursor_pos;
-                if (load_carta2)
+                if (selector_carta == 2'b10)
                     carta2_pos <= cursor_pos;
             end
         end
