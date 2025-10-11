@@ -1,13 +1,13 @@
-// videoGen.sv — Genera cartas de memoria con cursor
-// Las cartas están volteadas (blancas) por defecto
-// Muestra símbolo basado en el VALOR de la carta, no su posición
-// El borde del fondo indica el turno actual
+// videoGen.sv — Genera cartas de memoria con cursor y pantalla de ganador
 module videoGen(
   input  logic [9:0]  x,
   input  logic [9:0]  y,
   input  logic [3:0]  cursor_pos,
   input  logic [15:0] cards_face_up,  // Bit en 1 = carta boca arriba
   input  logic        turno,          // 0=Jugador1, 1=Jugador2
+  input  logic        game_over,      // NEW: Indica fin del juego
+  input  logic [3:0]  puntaje1,       // NEW: Puntaje jugador 1
+  input  logic [3:0]  puntaje2,       // NEW: Puntaje jugador 2
   output logic [7:0]  r,
   output logic [7:0]  g,
   output logic [7:0]  b
@@ -22,6 +22,9 @@ module videoGen(
   logic symbol_pixel;
   logic is_face_up;
   
+  // Winner display
+  logic winner_text_pixel;
+  
   // Tabla de valores de cartas (debe coincidir con FSM)
   logic [2:0] card_values [0:15];
   
@@ -35,6 +38,16 @@ module videoGen(
     card_values[12] = 3'd6;  card_values[13] = 3'd6;
     card_values[14] = 3'd7;  card_values[15] = 3'd7;
   end
+  
+  // Instanciar el módulo de display de ganador
+  winnerDisplay u_winner(
+    .x(x),
+    .y(y),
+    .game_over(game_over),
+    .puntaje1(puntaje1),
+    .puntaje2(puntaje2),
+    .text_pixel(winner_text_pixel)
+  );
   
   genvar i, j;
   generate
@@ -117,55 +130,78 @@ module videoGen(
     end
   end
   
-  // Renderizado
+  // Renderizado con prioridad para pantalla de ganador
   always_comb begin
-    r = 8'h00; g = 8'h40; b = 8'h00;  // Fondo verde
-    
-    // Borde del cursor
-    if (cursor_border[cursor_pos] && !incard[cursor_pos]) begin
-      r = 8'h00; g = 8'hFF; b = 8'hFF;
-    end
-    
-    if (|incard) begin
-      if (current_card == cursor_pos) begin
-        // Carta con cursor - borde cian
-        if (card_x < 5 || card_x >= 75 || card_y < 5 || card_y >= 55) begin
+    if (game_over) begin
+      // ===== MODO GAME OVER =====
+      // Fondo oscuro
+      r = 8'h10; g = 8'h10; b = 8'h10;
+      
+      // Renderizar texto del ganador
+      if (winner_text_pixel) begin
+        // Determinar color del texto según el ganador
+        if (puntaje1 > puntaje2) begin
+          // Jugador 1 gana - color azul brillante
           r = 8'h00; g = 8'hFF; b = 8'hFF;
-        end else if (is_face_up && symbol_pixel) begin
-          // Mostrar símbolo solo si está boca arriba
-          case (symbol_id)
-            3'd0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Rojo
-            3'd1: begin r = 8'h00; g = 8'h00; b = 8'hFF; end // Azul
-            3'd2: begin r = 8'h00; g = 8'hFF; b = 8'h00; end // Verde
-            3'd3: begin r = 8'hFF; g = 8'hFF; b = 8'h00; end // Amarillo
-            3'd4: begin r = 8'hFF; g = 8'h00; b = 8'hFF; end // Magenta
-            3'd5: begin r = 8'h00; g = 8'hFF; b = 8'hFF; end // Cian
-            3'd6: begin r = 8'hFF; g = 8'hA5; b = 8'h00; end // Naranja
-            3'd7: begin r = 8'h80; g = 8'h00; b = 8'h80; end // Púrpura
-            default: begin r = 8'hFF; g = 8'hFF; b = 8'hFF; end
-          endcase
+        end else if (puntaje2 > puntaje1) begin
+          // Jugador 2 gana - color amarillo brillante
+          r = 8'hFF; g = 8'hFF; b = 8'h00;
         end else begin
-          // Fondo blanco (carta boca abajo)
+          // Empate - color blanco
           r = 8'hFF; g = 8'hFF; b = 8'hFF;
         end
-      end else begin
-        // Cartas sin cursor - borde dorado
-        if (card_x < 3 || card_x >= 77 || card_y < 3 || card_y >= 57) begin
-          r = 8'hD4; g = 8'hAF; b = 8'h37;
-        end else if (is_face_up && symbol_pixel) begin
-          case (symbol_id)
-            3'd0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end
-            3'd1: begin r = 8'h00; g = 8'h00; b = 8'hFF; end
-            3'd2: begin r = 8'h00; g = 8'hFF; b = 8'h00; end
-            3'd3: begin r = 8'hFF; g = 8'hFF; b = 8'h00; end
-            3'd4: begin r = 8'hFF; g = 8'h00; b = 8'hFF; end
-            3'd5: begin r = 8'h00; g = 8'hFF; b = 8'hFF; end
-            3'd6: begin r = 8'hFF; g = 8'hA5; b = 8'h00; end
-            3'd7: begin r = 8'h80; g = 8'h00; b = 8'h80; end
-            default: begin r = 8'hFF; g = 8'hFF; b = 8'hFF; end
-          endcase
+      end
+      
+    end else begin
+      // ===== MODO JUEGO NORMAL =====
+      r = 8'h00; g = 8'h40; b = 8'h00;  // Fondo verde
+      
+      // Borde del cursor
+      if (cursor_border[cursor_pos] && !incard[cursor_pos]) begin
+        r = 8'h00; g = 8'hFF; b = 8'hFF;
+      end
+      
+      if (|incard) begin
+        if (current_card == cursor_pos) begin
+          // Carta con cursor - borde cian
+          if (card_x < 5 || card_x >= 75 || card_y < 5 || card_y >= 55) begin
+            r = 8'h00; g = 8'hFF; b = 8'hFF;
+          end else if (is_face_up && symbol_pixel) begin
+            // Mostrar símbolo solo si está boca arriba
+            case (symbol_id)
+              3'd0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end // Rojo
+              3'd1: begin r = 8'h00; g = 8'h00; b = 8'hFF; end // Azul
+              3'd2: begin r = 8'h00; g = 8'hFF; b = 8'h00; end // Verde
+              3'd3: begin r = 8'hFF; g = 8'hFF; b = 8'h00; end // Amarillo
+              3'd4: begin r = 8'hFF; g = 8'h00; b = 8'hFF; end // Magenta
+              3'd5: begin r = 8'h00; g = 8'hFF; b = 8'hFF; end // Cian
+              3'd6: begin r = 8'hFF; g = 8'hA5; b = 8'h00; end // Naranja
+              3'd7: begin r = 8'h80; g = 8'h00; b = 8'h80; end // Púrpura
+              default: begin r = 8'hFF; g = 8'hFF; b = 8'hFF; end
+            endcase
+          end else begin
+            // Fondo blanco (carta boca abajo)
+            r = 8'hFF; g = 8'hFF; b = 8'hFF;
+          end
         end else begin
-          r = 8'hFF; g = 8'hFF; b = 8'hFF;
+          // Cartas sin cursor - borde dorado
+          if (card_x < 3 || card_x >= 77 || card_y < 3 || card_y >= 57) begin
+            r = 8'hD4; g = 8'hAF; b = 8'h37;
+          end else if (is_face_up && symbol_pixel) begin
+            case (symbol_id)
+              3'd0: begin r = 8'hFF; g = 8'h00; b = 8'h00; end
+              3'd1: begin r = 8'h00; g = 8'h00; b = 8'hFF; end
+              3'd2: begin r = 8'h00; g = 8'hFF; b = 8'h00; end
+              3'd3: begin r = 8'hFF; g = 8'hFF; b = 8'h00; end
+              3'd4: begin r = 8'hFF; g = 8'h00; b = 8'hFF; end
+              3'd5: begin r = 8'h00; g = 8'hFF; b = 8'hFF; end
+              3'd6: begin r = 8'hFF; g = 8'hA5; b = 8'h00; end
+              3'd7: begin r = 8'h80; g = 8'h00; b = 8'h80; end
+              default: begin r = 8'hFF; g = 8'hFF; b = 8'hFF; end
+            endcase
+          end else begin
+            r = 8'hFF; g = 8'hFF; b = 8'hFF;
+          end
         end
       end
     end
