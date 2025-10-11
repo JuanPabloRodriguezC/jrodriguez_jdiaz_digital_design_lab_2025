@@ -1,4 +1,4 @@
-module randomGenerator(
+module randomGenerator( // dos generadores pseudoaleatorios basados en LFSR (Linear Feedback Shift Register)
     input  logic       clk,
     input  logic       rst,
     input  logic       request_random,  // Pulse from FSM when random cards needed
@@ -7,13 +7,16 @@ module randomGenerator(
     output logic [3:0] random_card2,
     output logic       random_ready     // Goes high when cards are valid
 );
-    // LFSR registers
-    logic [15:0] lfsr1, lfsr2;
+
+    logic [15:0] lfsr1, lfsr2; // reg 16 bits para generar la secuencia
+
     logic feedback1, feedback2;
     
-    // LFSR feedback polynomials
-    assign feedback1 = lfsr1[15] ^ lfsr1[14] ^ lfsr1[12] ^ lfsr1[3];
+    assign feedback1 = lfsr1[15] ^ lfsr1[14] ^ lfsr1[12] ^ lfsr1[3]; // realiza XORs para formar un nuevo bit
+
     assign feedback2 = lfsr2[15] ^ lfsr2[13] ^ lfsr2[11] ^ lfsr2[1];
+	 
+	 // en cada pulso de reloj se actualizan los polinomios 
     
     // LFSR runs continuously for better randomness
     always_ff @(posedge clk or posedge rst) begin
@@ -54,79 +57,27 @@ module randomGenerator(
     always_comb begin
         next_state = state;
         
-        case (state)
-            IDLE: begin
-                if (request_random)
-                    next_state = FIND_CARD1;
-            end
-            
-            FIND_CARD1: begin
-                // Found valid card1 OR exhausted attempts
-                if (!cards_matched[candidate] || attempts >= 4'd15)
-                    next_state = FIND_CARD2;
-            end
-            
-            FIND_CARD2: begin
-                // Found valid card2 OR exhausted attempts
-                if ((!cards_matched[candidate] && candidate != card1_found) || attempts >= 4'd15)
-                    next_state = DONE;
-            end
-            
-            DONE: begin
-                next_state = IDLE;
-            end
-        endcase
+
+        while (attempts < 16 && cards_matched[temp1]) begin // toma como base el lsfr de 4 bits
+		  // si ya fue emparejada, intenta con la siguiente
+            temp1 = (temp1 + 4'd1) & 4'hF;
+            attempts = attempts + 1;
+        end
+        
+        random_card1 = temp1;
     end
     
-    // Datapath
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            random_card1 <= 4'h0;
-            random_card2 <= 4'h1;
-            random_ready <= 1'b0;
-            candidate <= 4'h0;
-            attempts <= 4'h0;
-            card1_found <= 4'h0;
-        end else begin
-            case (state)
-                IDLE: begin
-                    random_ready <= 1'b0;
-                    if (request_random) begin
-                        // Start search from current LFSR value
-                        candidate <= lfsr1[3:0];
-                        attempts <= 4'h0;
-                    end
-                end
-                
-                FIND_CARD1: begin
-                    if (!cards_matched[candidate] || attempts >= 4'd15) begin
-                        // Found valid card or gave up
-                        random_card1 <= candidate;
-                        card1_found <= candidate;  // Save for card2 comparison
-                        candidate <= lfsr2[7:4];   // Start card2 search from different LFSR bits
-                        attempts <= 4'h0;
-                    end else begin
-                        // Keep searching
-                        candidate <= candidate + 4'd1;
-                        attempts <= attempts + 4'd1;
-                    end
-                end
-                
-                FIND_CARD2: begin
-                    if ((!cards_matched[candidate] && candidate != card1_found) || attempts >= 4'd15) begin
-                        // Found valid card2 or gave up
-                        random_card2 <= candidate;
-                    end else begin
-                        // Keep searching
-                        candidate <= candidate + 4'd1;
-                        attempts <= attempts + 4'd1;
-                    end
-                end
-                
-                DONE: begin
-                    random_ready <= 1'b1;  // Signal that cards are ready
-                end
-            endcase
+    // Validar y ajustar random_card2
+    always_comb begin
+        automatic logic [3:0] temp2;
+        automatic int attempts;
+        
+        temp2 = lfsr2_raw;
+        attempts = 0;
+        
+        while (attempts < 16 && (cards_matched[temp2] || temp2 == random_card1)) begin
+            temp2 = (temp2 + 4'd1) & 4'hF;
+            attempts = attempts + 1;
         end
     end
 endmodule

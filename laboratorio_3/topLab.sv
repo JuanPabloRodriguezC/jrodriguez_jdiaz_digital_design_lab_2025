@@ -49,6 +49,10 @@ module topLab(
   logic       hsync, vsync, vga_blank_n, vga_sync_n;
   logic [7:0] vga_r, vga_g, vga_b;
   
+  // Señales del winner display
+  logic [7:0] game_r, game_g, game_b;
+  logic       text_pixel;
+  
   // Botones procesados
   logic btn_select, btn_right, btn_left, btn_down, btn_up;
   logic rst_fsm;
@@ -211,9 +215,47 @@ module topLab(
   
   // ===== 11) Video Generation =====
   logic [15:0] display_cards;
-  assign display_cards = cards_face_up | cards_matched;  // Mostrar cartas volteadas O encontradas
+  assign display_cards = cards_face_up | cards_matched;
   
-  // ===== 12) Displays de puntaje =====
+  videoGen u_vid(
+    .x            (x),
+    .y            (y),
+    .cursor_pos   (cursor_position),
+    .cards_face_up(display_cards),
+    .turno        (turno),
+    .r            (game_r),
+    .g            (game_g),
+    .b            (game_b)
+  );
+  
+  // ===== 12) Winner Display =====
+  winnerDisplay u_winner(
+    .clk        (vga_clk),
+    .x          (x),
+    .y          (y),
+    .game_over  (game_over),
+    .puntaje1   (puntaje1),
+    .puntaje2   (puntaje2),
+    .text_pixel (text_pixel)
+  );
+  
+  // ===== 13) Composición de video (juego + texto de ganador) =====
+  always_comb begin
+    if (game_over && text_pixel) begin
+      // Mostrar texto de ganador en blanco
+      vga_r = 8'hFF;
+      vga_g = 8'hFF;
+      vga_b = 8'hFF;
+    end else begin
+      // Mostrar juego normal
+      vga_r = game_r;
+      vga_g = game_g;
+      vga_b = game_b;
+    end
+  end
+  
+  // ===== 14) Displays de puntaje =====
+
   bcd_to_7seg u_p1_display(
     .bcd(puntaje1),
     .segments(HEX2)

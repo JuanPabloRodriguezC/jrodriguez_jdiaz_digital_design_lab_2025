@@ -1,5 +1,6 @@
-// winnerDisplay.sv - Renderiza el mensaje de ganador en español (optimizado)
+// winnerDisplay.sv - Renderiza el mensaje de ganador en español (corregido)
 module winnerDisplay(
+    input logic clk,
     input  logic [9:0] x,
     input  logic [9:0] y,
     input  logic       game_over,
@@ -18,50 +19,78 @@ module winnerDisplay(
     assign winner_num = player1_wins ? 4'd1 : 4'd2;
     
     // Coordenadas relativas para el texto centrado
-    localparam logic [9:0] TEXT_CENTER_X = 10'd320;
-    localparam logic [9:0] TEXT_CENTER_Y = 10'd200;
+    localparam [9:0] TEXT_CENTER_X = 10'd320;
+    localparam [9:0] TEXT_CENTER_Y = 10'd250;
     
     // Dimensiones de caracteres (8x8 pixels, escalado 3x = 24x24)
-    localparam int CHAR_WIDTH = 24;
-    localparam int CHAR_HEIGHT = 24;
-    localparam int SCALE = 3;
+    localparam CHAR_WIDTH = 24;
+    localparam CHAR_HEIGHT = 24;
+    localparam SCALE = 3;
+    
+    // Para "GANA JUGADOR X": 14 caracteres = 14 * 24 = 336 pixels
+    // Centrar: offset = -168 (mitad de 336)
+    localparam WINNER_CHARS = 14;
+    localparam WINNER_WIDTH = WINNER_CHARS * CHAR_WIDTH;  // 336
+    
+    // Para "EMPATE": 6 caracteres = 6 * 24 = 144 pixels
+    // Centrar: offset = -72 (mitad de 144)
+    localparam TIE_CHARS = 6;
+    localparam TIE_WIDTH = TIE_CHARS * CHAR_WIDTH;  // 144
     
     logic signed [10:0] rel_x, rel_y;
     logic [3:0] char_index;
     logic [2:0] char_row, char_col;
     logic [7:0] char_pattern;
+    logic [4:0] x_in_char;  // Posición X dentro del carácter (0-23)
+    logic [9:0] max_width;
     
-    always_comb begin
-        text_pixel = 1'b0;
+    always_ff @(posedge clk) begin
+        text_pixel <= 1'b0;
         
         if (game_over) begin
-            // Calcular posición relativa
-            rel_x = $signed(x) - $signed(TEXT_CENTER_X) + $signed(11'd168);
+            // Determinar ancho del mensaje según si es empate o ganador
+            if (is_tie) begin
+                // Centrar "EMPATE" (144 pixels de ancho)
+                rel_x = $signed(x) - $signed(TEXT_CENTER_X) + $signed(11'd72);
+                max_width = TIE_WIDTH;
+            end else begin
+                // Centrar "GANA JUGADOR X" (336 pixels de ancho)
+                rel_x = $signed(x) - $signed(TEXT_CENTER_X) + $signed(11'd168);
+                max_width = WINNER_WIDTH;
+            end
+            
             rel_y = $signed(y) - $signed(TEXT_CENTER_Y) + $signed(11'd12);
             
             // Verificar si estamos en el rango del texto
-            if (rel_x >= 0 && rel_y >= 0 && rel_y < CHAR_HEIGHT) begin
-                // Determinar índice de carácter
+            if (rel_x >= 0 && rel_x < max_width && rel_y >= 0 && rel_y < CHAR_HEIGHT) begin
+                // Determinar índice de carácter usando división
                 char_index = rel_x / CHAR_WIDTH;
                 
-                // Posición dentro del carácter (escalado)
-                char_col = (rel_x % CHAR_WIDTH) / SCALE;
-                char_row = rel_y / SCALE;
-                
-                // Obtener patrón del carácter según el mensaje
-                if (is_tie)
-                    char_pattern = get_char_pattern_tie(char_index, char_row);
-                else
-                    char_pattern = get_char_pattern_winner(char_index, char_row, winner_num);
-                
-                // Extraer pixel del patrón
-                text_pixel = char_pattern[7 - char_col];
+                // Verificar que el índice sea válido
+                if ((is_tie && char_index < TIE_CHARS) || 
+                    (!is_tie && char_index < WINNER_CHARS)) begin
+                    
+                    // Calcular posición dentro del carácter
+                    x_in_char = rel_x - (char_index * CHAR_WIDTH);
+                    
+                    // Posición dentro del carácter (escalado)
+                    char_col = x_in_char / SCALE;
+                    char_row = rel_y / SCALE;
+                    
+                    // Obtener patrón del carácter según el mensaje
+                    if (is_tie)
+                        char_pattern = get_char_pattern_tie(char_index, char_row);
+                    else
+                        char_pattern = get_char_pattern_winner(char_index, char_row, winner_num);
+                    
+                    // Extraer pixel del patrón
+                    text_pixel <= char_pattern[7 - char_col];
+                end
             end
         end
     end
     
     // Función para "GANA JUGADOR X" (14 caracteres)
-    // Reutiliza el mismo texto base y solo cambia el número al final
     function automatic logic [7:0] get_char_pattern_winner(
         input logic [3:0] char_idx, 
         input logic [2:0] row,
@@ -206,10 +235,9 @@ module winnerDisplay(
             // (espacio)
             4'd12: return 8'b00000000;
             
-            // Número (1 o 2) - dinámico basado en player_num
+            // Número (1 o 2)
             4'd13: begin
                 if (player_num == 4'd1) begin
-                    // Dígito "1"
                     case(row)
                         3'd0: return 8'b00011000;
                         3'd1: return 8'b00111000;
@@ -221,7 +249,6 @@ module winnerDisplay(
                         3'd7: return 8'b00000000;
                     endcase
                 end else begin
-                    // Dígito "2"
                     case(row)
                         3'd0: return 8'b01111110;
                         3'd1: return 8'b11000011;

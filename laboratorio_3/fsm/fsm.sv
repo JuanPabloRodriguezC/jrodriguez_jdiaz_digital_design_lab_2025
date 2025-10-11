@@ -9,7 +9,11 @@ module fsm(
     input  logic [3:0] carta2_pos,
     input  logic       random_ready,
     
-    output logic        enable_score,
+
+    output logic        enable_score1,
+    output logic        enable_score2,
+    output logic        load_carta1,
+    output logic        load_carta2,
     output logic        mark_match,
     output logic [1:0]  selector_carta,
     output logic        timer_reset,
@@ -20,6 +24,7 @@ module fsm(
     output logic [15:0] cards_face_up
 );
 
+// definicion de estados
     typedef enum logic [2:0] {
         S0_SHOW_CARDS    = 3'b000,
         S1_WAIT_CARD1    = 3'b001,
@@ -30,19 +35,34 @@ module fsm(
         S6_GAME_OVER     = 3'b110,
         S7_SHOW_MISMATCH = 3'b111
     } state_t;
+	 
+	 
+	 // logica secuencial para asignar estados
     
-    (* syn_encoding = "one-hot" *) state_t state, next_state;
+
+    (* syn_encoding = "sequential" *) state_t state;
+    state_t next_state;
     
-    logic [25:0] delay_counter;
-    logic delay_done;
-    logic turno_reg;
+    logic [25:0] delay_counter; // para que las cartas se esperen al ser mostradas
+    logic delay_done; // cuando termina el delay
+    logic turno_reg; // registro del turno
     
     localparam DELAY_SHOW_CARDS = 26'd150_000_000;  // 3 seconds
     localparam DELAY_MISMATCH = 26'd50_000_000;     // 1 second
     
     assign turno = turno_reg;
 
-    // ===== Estado y contador =====
+
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst)
+            state <= S0_WAIT_CARD1;
+        else
+            state <= next_state;
+    end
+	 
+	 // asigna delay durante el S5 Show cards
+
+
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             state <= S0_SHOW_CARDS;
@@ -70,18 +90,19 @@ module fsm(
             delay_done = 1'b0;
     end
 
-    // ===== Registro de turno =====
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             turno_reg <= 1'b0;
         end else begin
-            // Cambiar turno al salir de SHOW_MISMATCH
-            if (state == S7_SHOW_MISMATCH && next_state == S1_WAIT_CARD1)
+
+            if (state == S5_SHOW_CARDS && next_state == S0_WAIT_CARD1 && !cards_match)
+
                 turno_reg <= ~turno_reg;
         end
     end
+	 
+	 // next state logic
 
-    // ===== Lógica de próximo estado =====
     always_comb begin
         next_state = state;
 
@@ -95,22 +116,35 @@ module fsm(
                 if (timer_timeout)
                     next_state = S5_RANDOM_SELECT;
                 else if (carta_recibida)
-                    next_state = S2_WAIT_CARD2;
+
+                    next_state = S1_WAIT_CARD2;
+						  else next_state = S0_WAIT_CARD1;
+
             end
             
             S2_WAIT_CARD2: begin
                 if (timer_timeout)
                     next_state = S5_RANDOM_SELECT;
                 else if (carta_recibida)
-                    next_state = S3_CHECK_MATCH;
+
+                    next_state = S2_CHECK_MATCH;
+						  else next_state = S1_WAIT_CARD2;
             end
             
-            S3_CHECK_MATCH: begin
-                if (cards_match)
-                    next_state = S4_PLAYER_SCORED;
-                else
-                    next_state = S7_SHOW_MISMATCH;
+            S2_CHECK_MATCH: begin
+                next_state = S5_SHOW_CARDS;
             end
+            
+				S5_SHOW_CARDS: begin
+					 if (delay_done) begin
+						  if (cards_match)
+								next_state = S3_PLAYER_SCORED;
+						  else
+								next_state = S0_WAIT_CARD1;
+					 end else begin
+						  next_state = S5_SHOW_CARDS;
+					 end
+				end
             
             S4_PLAYER_SCORED: begin
                 if (game_over)
@@ -136,11 +170,16 @@ module fsm(
             default: next_state = S1_WAIT_CARD1;
         endcase
     end
+	 
+	 // assign señales - logica de salida
 
-    // ===== Señales de control =====
+
     always_comb begin
-        // Defaults
-        enable_score = 1'b0;
+        enable_score1 = 1'b0;
+        enable_score2 = 1'b0;
+        load_carta1 = 1'b0;
+        load_carta2 = 1'b0;
+
         mark_match = 1'b0;
         selector_carta = 2'b00;
         timer_reset = 1'b1;
@@ -167,9 +206,10 @@ module fsm(
                 cards_face_up[carta1_pos] = 1'b1;  // Show first card only
             end
             
-            S3_CHECK_MATCH: begin
-                cards_face_up[carta1_pos] = 1'b1;
-                cards_face_up[carta2_pos] = 1'b1;
+
+            S4_RANDOM_SELECT: begin
+                use_random = 1'b1;
+
             end
 
             S4_PLAYER_SCORED: begin
@@ -193,7 +233,10 @@ module fsm(
             end
             
             S6_GAME_OVER: begin
-                // Could show all matched cards
+				
+						timer_reset = 1'b0;
+						timer_enable = 1'b0;
+				
             end
             
             default: ;
