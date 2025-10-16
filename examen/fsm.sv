@@ -44,7 +44,7 @@ assign boton_edge = boton & ~boton_prev;
 	
 // logica combinacional de caso actual a siguiente estado
 always_comb begin
-	next = current; // Valor por defecto para evitar latches
+	next = current; // Valor por defecto
 	
 	case(current)
 		Q0: if(boton_edge) next = Q2;
