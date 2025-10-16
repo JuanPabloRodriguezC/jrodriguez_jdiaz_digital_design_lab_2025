@@ -1,3 +1,4 @@
+
 module Examen1 (
 	input logic clk,
 	input logic rst,
@@ -20,12 +21,12 @@ module Examen1 (
   
   
   contador #(
-    .segundos(9)
+    .segundos(10)
   ) u_contadorx (
     .clk            (clk),
     .rst            (rstx),
     .enable         (enx),
-    .timeout        (timeoutx),
+    .timeout        (timeoutx)
   );
   
   contador #(
@@ -34,7 +35,7 @@ module Examen1 (
     .clk            (clk),
     .rst            (rst1),
     .enable         (en1),
-    .timeout        (timeout1),
+    .timeout        (timeout1)
   );
   
   contador #(
@@ -43,29 +44,28 @@ module Examen1 (
     .clk            (clk),
     .rst            (rst5),
     .enable         (en5),
-    .timeout        (timeout5),
+    .timeout        (timeout5)
   );
   
  fsm u_fsm(
     .clk              (clk),
-    .rst              (rst_fsm),
-	 .boton (boton),
-	 .timeoutx(timeoutx),
-	 .timeout1(timeout1),
-	 .timeout5(timeout5),
+    .rst              (rst),
+	 .boton            (boton),
+	 .timeoutx         (timeoutx),
+	 .timeout1         (timeout1),
+	 .timeout5         (timeout5),
 	 
-	 .enx(enx),
-	 .en1(en1),
-	 .en5(en5),
-	 .rstx(rstx),
-	 .rst1(rst1),
-	 .rst5(rst5),
-	 .vehicRojo(vehicRojo),
-	 .vehicAmarillo(vehicAmarillo),
-	 .vehicVerde(vehicVerde),
-	 .peatVerde(peatVerde),
-	 .peatRojo(peatRojo)
- 
+	 .enx              (enx),
+	 .en1              (en1),
+	 .en5              (en5),
+	 .rstx             (rstx),
+	 .rst1             (rst1),
+	 .rst5             (rst5),
+	 .vehicRojo        (vehicRojo),
+	 .vehicAmarillo    (vehicAmarillo),
+	 .vehicVerde       (vehicVerde),
+	 .peatVerde        (peatVerde),
+	 .peatRojo         (peatRojo)
   );
   
-  endmodule
+endmodule
